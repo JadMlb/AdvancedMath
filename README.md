@@ -21,7 +21,6 @@ Review the documentation for detailed description of every method in the followi
 1. `Matrix`: represents matrices of any size
 
 ### Functionalities
-1. `BinaryOperators` (Enum): and, or, xor, rotate, shift ...
 1. `Operators` (Enum): contains arithmetic operators (+, -, ...) as well as mathematical functions. Used for constructing the tree
 1. `Graph`: plots functions in a new JFrame (uses `java.swing` and `java.awt`)
 1. `Operations`: implements some methods that do not exist in other classes but uses the latter
@@ -56,7 +55,7 @@ Review the documentation for detailed description of every method in the followi
 >graph.plot (f, Color.RED);
 >graph.plot (g, Color.GREEN);
 >graph.plot (f.derive ("x"), Color.BLUE);
->graph.show();
+>graph.display();
 >```
 > output
 > ![](Graph_demo.png)

@@ -342,7 +342,7 @@ public class Graph extends JPanel
 	/**
 	 * Displays the {@code Graph} in a new {@code JFrame}
 	 */
-	public void show ()
+	public void display ()
 	{
 		JFrame f = new JFrame (title);
 		f.setDefaultCloseOperation (JFrame.EXIT_ON_CLOSE);
