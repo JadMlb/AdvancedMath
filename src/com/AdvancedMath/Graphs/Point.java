@@ -1,9 +1,9 @@
-package Graphs;
+package com.AdvancedMath.Graphs;
 
-import Numbers.ConstantValue;
-import Numbers.FloatValue;
-import Numbers.FractionValue;
-import Numbers.Value;
+import com.AdvancedMath.Numbers.ConstantValue;
+import com.AdvancedMath.Numbers.FloatValue;
+import com.AdvancedMath.Numbers.FractionValue;
+import com.AdvancedMath.Numbers.Value;
 
 /**
  * A class that represents a point on a graph

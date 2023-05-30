@@ -1,6 +1,6 @@
-package EqTree;
+package com.AdvancedMath.EqTree;
 
-import Numbers.Number;
+import com.AdvancedMath.Numbers.Number;
 
 /**
  * Class that holds a {@code Number} element in it. Child node in a binary tree

@@ -1,4 +1,4 @@
-package Numbers;
+package com.AdvancedMath.Numbers;
 
 /**
  * Class that wraps a {@code double}

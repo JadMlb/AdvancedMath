@@ -1,6 +1,6 @@
-package Numbers;
+package com.AdvancedMath.Numbers;
 
-import Functionalities.Operators;
+import com.AdvancedMath.Functionalities.Operators;
 
 /**
  * Class representing constant values, like Pi, e, phi (golden ratio), ln(5), e^(-2), sqrt(10), ...

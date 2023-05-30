@@ -1,12 +1,12 @@
-package Numbers;
+package com.AdvancedMath.Numbers;
 
 import java.util.HashMap;
 
-import EqTree.Node;
-import EqTree.NumberNode;
-import EqTree.OperatorNode;
-import EqTree.VariableNode;
-import Graphs.Point;
+import com.AdvancedMath.EqTree.Node;
+import com.AdvancedMath.Graphs.Point;
+import com.AdvancedMath.EqTree.NumberNode;
+import com.AdvancedMath.EqTree.OperatorNode;
+import com.AdvancedMath.EqTree.VariableNode;
 
 /**
  * Class that represents any number. It uses a complex representation of a number (a + bi) 

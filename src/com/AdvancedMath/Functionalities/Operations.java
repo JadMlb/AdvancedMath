@@ -1,9 +1,9 @@
-package Functionalities;
+package com.AdvancedMath.Functionalities;
 
-import Numbers.ConstantValue;
-import Numbers.FractionValue;
-import Numbers.Matrix;
-import Numbers.Number;
+import com.AdvancedMath.Numbers.ConstantValue;
+import com.AdvancedMath.Numbers.FractionValue;
+import com.AdvancedMath.Numbers.Matrix;
+import com.AdvancedMath.Numbers.Number;
 
 /**
  * Class that defines static functions that perform general operations, and do not fit in specific class

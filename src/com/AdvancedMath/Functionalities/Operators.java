@@ -1,4 +1,4 @@
-package Functionalities;
+package com.AdvancedMath.Functionalities;
 
 /**
  * Enumeration for supported arithmetic operations as well as mathematical functions

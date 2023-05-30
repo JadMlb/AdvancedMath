@@ -1,6 +1,6 @@
-package Numbers;
+package com.AdvancedMath.Numbers;
 
-import Functionalities.Operations;
+import com.AdvancedMath.Functionalities.Operations;
 
 /**
  * Class that represents a fraction

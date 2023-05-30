@@ -1,6 +1,6 @@
-package Graphs;
+package com.AdvancedMath.Graphs;
 
-import Numbers.Value;
+import com.AdvancedMath.Numbers.Value;
 
 public interface Graphable
 {

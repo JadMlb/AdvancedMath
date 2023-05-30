@@ -1,4 +1,4 @@
-package EqTree;
+package com.AdvancedMath.EqTree;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -6,8 +6,8 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Stack;
 
-import Functionalities.Operators;
-import Numbers.Number;
+import com.AdvancedMath.Functionalities.Operators;
+import com.AdvancedMath.Numbers.Number;
 
 /**
  * Class that represents the relationship between two other {@code Node}s

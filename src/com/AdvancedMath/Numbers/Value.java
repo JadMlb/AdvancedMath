@@ -1,4 +1,4 @@
-package Numbers;
+package com.AdvancedMath.Numbers;
 
 public abstract class Value
 {
