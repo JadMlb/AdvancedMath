@@ -480,7 +480,8 @@ public class Matrix
 		Number det = Number.ZERO;
 		Matrix row = getRow (0);
 		for (int i = 0; i < row.getColCount(); i++)
-			det = det.add (Number.ONE.negate().pow(Number.real ((double) i)).multiply(row.getValueAt (0, i)).multiply (subMatrix(0, i).determinant()));
+			// det = det.add (Number.ONE.negate().pow(Number.real ((double) i)).multiply(row.getValueAt (0, i)).multiply (subMatrix(0, i).determinant()));
+			det = det.add (Number.ONE.negate().pow(i).multiply(row.getValueAt (0, i)).multiply (subMatrix(0, i).determinant()));
 		
 		return det;
 	}

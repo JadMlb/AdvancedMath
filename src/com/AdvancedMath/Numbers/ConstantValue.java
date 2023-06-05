@@ -292,6 +292,12 @@ public class ConstantValue extends Value
 	}
 
 	@Override
+	public Value clone ()
+	{
+		return new ConstantValue (multiplier, operator, arguments.clone());
+	}
+
+	@Override
 	public String toString () 
 	{
 		StringBuilder sb = new StringBuilder();

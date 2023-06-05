@@ -1,5 +1,6 @@
 package com.AdvancedMath.Numbers;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 
 import com.AdvancedMath.EqTree.Node;
@@ -11,7 +12,7 @@ import com.AdvancedMath.EqTree.VariableNode;
 /**
  * Class that represents any number. It uses a complex representation of a number (a + bi) 
  */
-public class Number extends Point
+public class Number extends Point implements Cloneable
 {
 	public static Number ZERO = Number.real (0.0), 
 						 ONE = Number.real (1.0),
@@ -258,9 +259,12 @@ public class Number extends Point
 	 * 
 	 * @param c
 	 * @return The division result of this and d
+	 * @throws IllegalArgumentException if {@code d} is 0
 	 */
 	public Number divide (Double d)
 	{
+		if (d == 0)
+			throw new IllegalArgumentException ("Math error: Dividing by zero");
 		return new Number (getX().divide (new FloatValue (d)), getY().divide (new FloatValue (d)));
 	}
 	
@@ -269,35 +273,111 @@ public class Number extends Point
 	 * 
 	 * @param c
 	 * @return The division result of this and c
+	 * @throws IllegalArgumentException if {@code c} is 0
 	 */
 	public Number divide (Number c)
 	{
+		if (c.equals (Number.ZERO))
+			throw new IllegalArgumentException ("Math error: Dividing by zero");
 		return this.multiply(c.conjugate()).divide (Math.pow (c.length(), 2));
 	}
 
 	/**
-	 * Raises this number to the power of c
+	 * Raises this number to the power of n
 	 * 
-	 * @param c
-	 * @return This number raised to the power of c
+	 * <p>If {@code n} is negative, the result is equal to calculating 1 / (this^abs(n))
+	 * 
+	 * @param n The power that this number is raised to
+	 * @return This number raised to the power of n
 	 */
-	public Number pow (Number c)
+	public Number pow (int n)
 	{
-		if (this.isPureReal() && c.isPureReal())
-			if (c.getX().getDoubleValue() < 1 && 2 % c.getX().getDoubleValue() == 0 && this.getX().getDoubleValue() < 0)
-				return Number.imaginary (Math.pow (Math.abs (this.getX().getDoubleValue()), c.getX().getDoubleValue()));
+		return Number.fromPolar (new FloatValue (Math.pow (length(), n)), argument().multiply (new FractionValue (n, 1)));
+	}
+
+	/**
+	 * Calculates this number raised to the power of another number
+	 * 
+	 * <ul>
+	 * 	<li>If {@code n} is a real number and is decimal that is not an integer, the result is equal to finding the 
+	 * 	nth root of this number raised to a certain power m calculted by using the {@code FloatValue.getFraction()} method</li>
+	 * <li>Else returns the value of this number raised to the power of {@code n}</li>
+	 * 
+	 * @param n The power this number is raised to
+	 * @return this ^ n
+	 * @see Number#pow(int)
+	 * @see Number#nthRoot(int)
+	 * @see FloatValue#getFraction()
+	 */
+	public Number pow (Number n)
+	{
+		if (n.isPureReal())
+			if (n.getX().getDoubleValue() - (int) n.getX().getDoubleValue() == 0)
+				return pow ((int) n.getX().getDoubleValue());
 			else
-				return Number.real (getX().pow (c.getX()));
-		
-		return Number.fromPolar
-		(
-			new FloatValue
+			{
+				FractionValue pow = new FloatValue(n.getX().getDoubleValue()).getFraction();
+				return pow(pow.getNumerator()).nthRoot(pow.getDenomenator()).get (0);
+			}
+		else
+			return Number.fromPolar
 			(
-				Math.pow (this.length(), c.getX().getDoubleValue()) 
-				* Math.exp (c.getY().negateCopy().multiply(argument()).getDoubleValue())
-			), 
-			c.getX().multiply(argument()).add (c.getY().multiply (new FloatValue (Math.log (this.length()))))
-		);
+				ConstantValue.exp (Number.real(length()).pow (Number.real(n.getX())).getX().getDoubleValue(), - n.getY().getDoubleValue() * argument().getDoubleValue()),
+				n.getX().multiply(argument()).add (ConstantValue.ln (n.getY().getDoubleValue(), length()))
+			);
+	}
+
+	/**
+	 * Returns all the nth roots of this number using complex numbers
+	 * 
+	 * <p> If {@code n} is negative, the values returned correspond to calculating 1 / (nthRoot(this))
+	 * 
+	 * @param n The order of the root
+	 * @return {@code ArrayList} containing the nth roots of the number
+	 */
+	public ArrayList<Number> nthRoot (int n)
+	{
+		ArrayList<Number> roots = new ArrayList<>();
+		boolean isNegative = false;
+
+		if (n < 0)
+		{
+			isNegative = true;
+			n = - n;
+		}
+		
+		if (n == 1)
+		{
+			if (isNegative)
+				roots.add (Number.ONE.divide (this));
+			else
+				roots.add (clone());
+			return roots;
+		}
+
+		Value r = null;
+		Double length = length();
+
+		if (length == 0)
+			roots.add (Number.ZERO);
+		else
+		{
+			double x = Math.exp (1.0 / n * Math.log (length));
+			if (x - (int) x != 0)
+				r = ConstantValue.pow (1, length, 0.5);
+			else
+				r = new FloatValue (x);
+			for (int i = 0; i < n; i++)
+			{
+				Number root = Number.fromPolar (r.clone(), ConstantValue.PI.multiply(new FloatValue (2.0)).multiply(new FractionValue (i, 1)).add(argument()).divide (new FractionValue (n, 1)));
+				if (isNegative)
+					root = Number.ONE.divide (root);
+
+				roots.add (root);
+			}
+		}
+
+		return roots;
 	}
 
 	/**
@@ -378,8 +458,10 @@ public class Number extends Point
 					this.multiply (Number.I) // iz
 					.add
 					(
-						Number.ONE.subtract (this.pow (Number.real (2.0))) // 1 - z^2
-						.pow (Number.real (0.5)) // ^(1/2)
+						// Number.ONE.subtract (this.pow (Number.real (2.0))) // 1 - z^2
+						// .pow (Number.real (0.5)) // ^(1/2)
+						Number.ONE.subtract (this.pow (2)) // 1 - z^2
+						.nthRoot(2).get(0) // ^(1/2)
 					)
 					.ln()
 				)
@@ -398,8 +480,10 @@ public class Number extends Point
 				this.multiply (Number.I) // iz
 				.add
 				(
-					Number.ONE.subtract (this.pow (Number.real (2.0))) // 1 - z^2
-					.pow (Number.real (0.5)) // ^(1/2)
+					// Number.ONE.subtract (this.pow (Number.real (2.0))) // 1 - z^2
+					// .pow (Number.real (0.5)) // ^(1/2)
+					Number.ONE.subtract (this.pow (2)) // 1 - z^2
+					.nthRoot(2).get (0) // ^(1/2)
 				)
 				.ln()
 			);
@@ -517,7 +601,17 @@ public class Number extends Point
 				case SUB: return leftRes.subtract (rightRes);
 				case MUL: return leftRes.multiply (rightRes);
 				case DIV: return leftRes.divide (rightRes);
-				case POW: return leftRes.pow (rightRes);
+				case POW: 
+				if (!rightRes.isPureReal())
+					return null;
+				else
+				{
+					FractionValue power = new FloatValue(rightRes.getX().getDoubleValue()).getFraction();
+					if (power.getDenomenator() == 1)
+						leftRes.pow ((int) rightRes.getX().getDoubleValue());
+					else
+						leftRes.pow(power.getNumerator()).nthRoot(power.getDenomenator()).get (0);
+				}
 				case FAC: return leftRes.factorial();
 				case LN: return rightRes.ln();
 				case EXP: return Number.fromPolar (ConstantValue.exp (1, rightRes.getX().getDoubleValue()), rightRes.getY());
@@ -527,7 +621,8 @@ public class Number extends Point
 				case TAN: return rightRes.sin().divide (rightRes.cos());
 				case ASIN: return rightRes.asin();
 				case ACOS: return rightRes.acos();
-				case ATAN: return rightRes.divide(rightRes.pow(Number.real (2.0)).add (Number.ONE).pow (Number.real (new FractionValue (1, 2)))).asin();
+				// case ATAN: return rightRes.divide(rightRes.pow(Number.real (2.0)).add (Number.ONE).pow (Number.real (new FractionValue (1, 2)))).asin();
+				case ATAN: return rightRes.divide(rightRes.pow(2).add (Number.ONE).nthRoot(2).get (0)).asin();
 				case SINH: return rightRes.sinh();
 				case COSH: return rightRes.cosh();
 				case TANH: return rightRes.sinh().divide (rightRes.cosh());
@@ -542,10 +637,16 @@ public class Number extends Point
 	}
 
 	@Override
+	public Number clone ()
+	{
+		return new Number (getX().clone(), getY().clone());
+	}
+
+	@Override
 	public String toString () 
 	{
 		if (!isValid())
-			return "Invalid";
+			return "NaN";
 
 		String s = "",
 				x = getX().equals (FractionValue.ONE) ? FractionValue.ONE.toString() : getX().toString(),
@@ -568,7 +669,7 @@ public class Number extends Point
 	/**
 	 * Gets the {@code String} of this number in the polar form (re^(theta*i))
 	 * 
-	* @return The polar form of this {@code Number}
+	 * @return The polar form of this {@code Number}
 	 */
 	public String toStringPolar ()
 	{

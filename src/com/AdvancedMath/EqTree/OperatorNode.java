@@ -7,6 +7,8 @@ import java.util.Iterator;
 import java.util.Stack;
 
 import com.AdvancedMath.Functionalities.Operators;
+import com.AdvancedMath.Numbers.FloatValue;
+import com.AdvancedMath.Numbers.FractionValue;
 import com.AdvancedMath.Numbers.Number;
 
 /**
@@ -381,7 +383,17 @@ public class OperatorNode extends Node
 					simplifiedRight = simplify (o.getRight());
 
 				if (simplifiedLeft instanceof NumberNode l && simplifiedRight instanceof NumberNode r)
-					return new NumberNode (l.getValue().pow (r.getValue()));
+					// return new NumberNode (l.getValue().pow (r.getValue()));
+					if (!r.getValue().isPureReal())
+						return new NumberNode (Double.NaN, Double.NaN);
+					else
+					{
+						FractionValue power = new FloatValue(r.getValue().getX().getDoubleValue()).getFraction();
+						if (power.getDenomenator() == 1)
+							return new NumberNode (l.getValue().pow ((int) r.getValue().getX().getDoubleValue()));
+						else
+							return new NumberNode (l.getValue().pow(power.getNumerator()).nthRoot(power.getDenomenator()).get (0));
+					}
 				
 				if (simplifiedRight instanceof NumberNode n)
 				{

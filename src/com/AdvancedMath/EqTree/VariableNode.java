@@ -1,4 +1,4 @@
-package EqTree;
+package com.AdvancedMath.EqTree;
 
 public class VariableNode extends Node 
 {

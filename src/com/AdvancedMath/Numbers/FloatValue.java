@@ -130,6 +130,12 @@ public class FloatValue extends Value
 	}
 
 	@Override
+	public Value clone ()
+	{
+		return new FloatValue (val.doubleValue());
+	}
+
+	@Override
 	public Value negateCopy ()
 	{
 		return new FloatValue (-val);

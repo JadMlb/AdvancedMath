@@ -158,6 +158,12 @@ public class FractionValue extends Value
 	}
 
 	@Override
+	public Value clone ()
+	{
+		return new FractionValue (num, denom);
+	}
+
+	@Override
 	public String toString () 
 	{
 		if (denom == 1)
