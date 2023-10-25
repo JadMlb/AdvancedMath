@@ -321,7 +321,7 @@ public class Range implements Cloneable
 	 */
 	public static Range lte (Value v)
 	{
-		return new Range (new FloatValue (Double.POSITIVE_INFINITY), true, false, v);
+		return new Range (new FloatValue (Double.NEGATIVE_INFINITY), true, false, v);
 	}
 
 	/**
