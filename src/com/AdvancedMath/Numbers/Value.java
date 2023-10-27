@@ -1,5 +1,7 @@
 package com.AdvancedMath.Numbers;
 
+import java.text.NumberFormat;
+
 public abstract class Value implements Cloneable
 {
 	/**
@@ -31,7 +33,7 @@ public abstract class Value implements Cloneable
 	/**
 	 * Compares two {@code Value}s
 	 * 
-	 * If this {@code Value} is
+	 * <p>If this {@code Value} is
 	 * <ul>
 	 * 	<li>equal to {@code v}, 0 is returned</li>
 	 * 	<li>greater than {@code v}, 1 is returned</li>
@@ -83,11 +85,14 @@ public abstract class Value implements Cloneable
 	 */
 	protected String formatNumber (double d)
 	{
-		String nb = String.valueOf (d);
-		if (nb.indexOf (".") > -1)
-			if (Long.valueOf (nb.split("\\.")[1]) == 0)
-				nb = nb.split("\\.")[0];
+		NumberFormat nf = NumberFormat.getInstance();
+		nf.setMaximumFractionDigits (20);
 
-		return nb;
+		// String nb = String.valueOf (d);
+		// if (nb.indexOf (".") > -1)
+		// 	if (Long.valueOf (nb.split("\\.")[1]) == 0)
+		// 		nb = nb.split("\\.")[0];
+
+		return nf.format (d);
 	}
 }
