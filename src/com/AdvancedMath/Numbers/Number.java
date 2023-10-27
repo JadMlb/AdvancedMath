@@ -273,12 +273,14 @@ public class Number extends Point implements Cloneable
 	 * 
 	 * @param c
 	 * @return The division result of this and c
-	 * @throws IllegalArgumentException if {@code c} is 0
 	 */
 	public Number divide (Number c)
 	{
 		if (c.equals (Number.ZERO))
-			throw new IllegalArgumentException ("Math error: Dividing by zero");
+			// throw new IllegalArgumentException ("Math error: Dividing by zero");
+			return new Number (Double.POSITIVE_INFINITY, Double.POSITIVE_INFINITY);
+		else if (Double.isInfinite (c.getX().getDoubleValue()) || Double.isInfinite (c.getY().getDoubleValue()))
+			return Number.ZERO;
 		return this.multiply(c.conjugate()).divide (Math.pow (c.length(), 2));
 	}
 
@@ -608,9 +610,9 @@ public class Number extends Point implements Cloneable
 				{
 					FractionValue power = new FloatValue(rightRes.getX().getDoubleValue()).getFraction();
 					if (power.getDenomenator() == 1)
-						leftRes.pow ((int) rightRes.getX().getDoubleValue());
+						return leftRes.pow ((int) rightRes.getX().getDoubleValue());
 					else
-						leftRes.pow(power.getNumerator()).nthRoot(power.getDenomenator()).get (0);
+						return leftRes.pow(power.getNumerator()).nthRoot(power.getDenomenator()).get (0);
 				}
 				case FAC: return leftRes.factorial();
 				case LN: return rightRes.ln();
@@ -645,6 +647,8 @@ public class Number extends Point implements Cloneable
 	@Override
 	public String toString () 
 	{
+		if (Double.isInfinite (getX().getDoubleValue()) || Double.isInfinite (getY().getDoubleValue()))
+			return String.valueOf (getX().getDoubleValue());
 		if (!isValid())
 			return "NaN";
 
