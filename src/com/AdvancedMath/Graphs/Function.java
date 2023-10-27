@@ -1,84 +1,35 @@
 package com.AdvancedMath.Graphs;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.stream.Collectors;
 
-import com.AdvancedMath.Functionalities.Operators;
-import com.AdvancedMath.Numbers.FractionValue;
-import com.AdvancedMath.Numbers.Number;
-
 import com.AdvancedMath.EqTree.Node;
 import com.AdvancedMath.EqTree.NumberNode;
 import com.AdvancedMath.EqTree.OperatorNode;
 import com.AdvancedMath.EqTree.VariableNode;
+import com.AdvancedMath.Functionalities.Operators;
+import com.AdvancedMath.Numbers.FractionValue;
+import com.AdvancedMath.Numbers.Number;
 
-/**
- * Class that represents functions to be manipulated
- */
-public class Function
+public abstract class Function
 {
 	private HashSet<String> variables;
-	private Node tree;
 	private String name;
 
 	/**
-	 * Creates a {@code Function} name(variables) = expression. Parses the {@code String} expression and builds it into a tree
-	 * 
-	 * @param name The name of the function (f(x), g(x, y), ...)
-	 * @param variables The set of variables that this function depends on
-	 * @param expression The {@code String} that represents this function
-	 */
-	public Function (String name, HashSet<String> variables, String expression)
-	{
-		this.name = name;
-		this.tree = Node.parse (expression + ")");
-		this.variables = variables;
-	}
-
-	/**
 	 * Creates a {@code Function} name(variables) = expression
 	 * 
 	 * @param name The name of the function (f(x), g(x, y), ...)
 	 * @param variables The set of variables that this function depends on
 	 * @param expression The {@code Node} that represents this function
 	 */
-	public Function (String name, HashSet<String> variables, Node expression)
+	public Function (String name, HashSet<String> variables)
 	{
 		this.name = name;
 		this.variables = variables;
-		this.tree = expression;
-	}
-
-	/**
-	 * Creates a {@code Function} name(variables) = expression. Parses the {@code String} expression and builds it into a tree
-	 * 
-	 * @param name The name of the function (f(x), g(x, y), ...)
-	 * @param variables An array of {@code String} containing the names of the variables that this function depends on
-	 * @param expression The {@code String} that represents this function
-	 */
-	public Function (String name, String[] variables, String expression)
-	{
-		this.name = name;
-		this.tree = Node.parse (expression + ")");
-		this.variables = new HashSet<> (Arrays.asList (variables));
-	}
-
-	/**
-	 * Creates a {@code Function} name(variables) = expression
-	 * 
-	 * @param name The name of the function (f(x), g(x, y), ...)
-	 * @param variables An array of {@code String} containing the names of the variables that this function depends on
-	 * @param expression The {@code Node} that represents this function
-	 */
-	public Function (String name, String[] variables, Node expression)
-	{
-		this.name = name;
-		this.variables = new HashSet<> (Arrays.asList (variables));
-		this.tree = expression;
 	}
 
 	/**
@@ -97,7 +48,7 @@ public class Function
 	 * @param originalVariable The old variable
 	 * @param newVariable The new variable name
 	 */
-	public void setVariable (String originalVariable, String newVariable) 
+	public void changeVariable (String originalVariable, String newVariable) 
 	{
 		variables.remove (originalVariable);
 		variables.add (newVariable);
@@ -124,42 +75,37 @@ public class Function
 	}
 
 	/**
-	 * Gets the {@code Node} tree representing this function
+	 * Gets the {@code Node} tree representing this function. Equivalent to {@code toNode (Range.R)}
 	 * 
-	 * @return The binary tree of this function
+	 * @return The binary tree of this function on the range R (-infinty, +infinity)
 	 */
-	public Node toNode ()
-	{
-		return tree;
-	}
+	public abstract Node toNode ();
+	
+	/**
+	 * Gets the {@code Node} tree representing this function on the given rangeof if the range is included in the defined range of the function
+	 * 
+	 * @return The binary tree of this function on the given range
+	 */
+	public abstract Node toNode (Range r);
 
 	/**
 	 * Get the value of f(a, b, ...)
 	 * 
 	 * @param x The values mapped to the name of the variables at which we want to evaluate the function. 
-	 * @return The value of the function at the specified point
-	 * @throws IllegalArgumentException if no mapping between a used variable and a value is found
+	 * @return The value of the function for the specified variables
 	 */
-	public Number of (HashMap<String, Number> x)
-	{
-		if (x.keySet().containsAll (variables))
-			throw new IllegalArgumentException ("The provided mapping of the variables to values is incomplete");
-		
-		return Number.valueOf (tree, x);
-	}
+	public abstract Node of (HashMap<String, Number> x);
 
 	/**
 	 * Returns the first order derivative of this {@code Function}
 	 * 
 	 * @param var The variable we are differentiating in respect of
-	 * @return The derivative of this function in respect of the variable provided
+	 * @return The derivative of this function in respect of the variable provided on all the ranges (if exist) of the function
+	 * @see Range
 	 */
-	public Function derive (String var)
-	{
-		return new Function (name + "'", variables, OperatorNode.simplify (deriveNode(tree, var)));
-	}
+	public abstract Function derive (String var);
 
-	private static Node deriveNode (Node root, String var)
+	protected static Node deriveNode (Node root, String var)
 	{
 		if (root == null)
 			return null;
@@ -554,6 +500,8 @@ public class Function
 				vars += ", ";
 			vars += variabless.get (i);
 		}
-		return name + "(" + vars + ") = " + tree.toString();
+		return name + "(" + vars + ") = ";
 	}
+
+	// public abstract Function multiply (Function f);
 }
