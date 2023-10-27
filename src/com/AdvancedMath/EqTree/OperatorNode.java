@@ -80,9 +80,23 @@ public class OperatorNode extends Node
 	 * <p>e.g. provided (10*x)/(2*x), 5 is returned
 	 * 
 	 * @param root The root {@code Node} of the given tree
-	 * @return The simplified tree
+	 * @return The simplified tree, either a {@code NumberNode} or an {@code OperatorNode}
 	 */
 	public static Node simplify (Node root)
+	{
+		return simplify (root, null);
+	}
+
+	/**
+	 * Simplifies the given binary tree representing an equation and replaces variables that have a mapping
+	 * 
+	 * <p>e.g. provided (10*x)/(2*x), 5 is returned
+	 * 
+	 * @param root The root {@code Node} of the given tree
+	 * @param variables The mapping between all the potential variables in the tree to a value
+	 * @return The simplified tree, either a {@code NumberNode} or an {@code OperatorNode}
+	 */
+	public static Node simplify (Node root, HashMap<String, Number> variables)
 	{
 		if (root == null)
 			return null;
@@ -91,7 +105,7 @@ public class OperatorNode extends Node
 		{
 			try
 			{
-				Number n = Number.valueOf (root, null);
+				Number n = Number.valueOf (root, variables);
 				return new NumberNode (n);
 			}
 			catch (Exception e) {}
@@ -107,13 +121,13 @@ public class OperatorNode extends Node
 				Node simplifiedLeft = simplify (o.getLeft()), simplifiedRight = simplify (o.getRight());
 				try
 				{
-					divided = Number.valueOf (simplifiedLeft, null);
+					divided = Number.valueOf (simplifiedLeft, variables);
 				}
 				catch (Exception e) {}
 				
 				try
 				{
-					divisor = Number.valueOf (simplifiedRight, null);
+					divisor = Number.valueOf (simplifiedRight, variables);
 				}
 				catch (Exception e) {}
 
@@ -410,6 +424,8 @@ public class OperatorNode extends Node
 				}
 			}
 		}
+		else if (root instanceof VariableNode v && variables != null && variables.get (v.getName()) != null)
+			return new NumberNode (variables.get (v.getName()));
 
 		return root;
 	}
