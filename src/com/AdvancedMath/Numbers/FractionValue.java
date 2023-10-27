@@ -1,5 +1,8 @@
 package com.AdvancedMath.Numbers;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+
 import com.AdvancedMath.Functionalities.Operations;
 
 /**
@@ -25,6 +28,11 @@ public class FractionValue extends Value
 		
 		this.num = num;
 		this.denom = denom;
+	}
+
+	public static FractionValue integer (int val)
+	{
+		return new FractionValue (val, 1);
 	}
 
 	public int getNumerator () 
@@ -60,7 +68,9 @@ public class FractionValue extends Value
 	 */
 	public FloatValue toFloatValue ()
 	{
-		return new FloatValue (((double) num) / denom);
+		BigDecimal bd = new BigDecimal (Double.toString (((double) num) / denom));
+		bd = bd.setScale (10, RoundingMode.HALF_UP);
+		return new FloatValue (bd.doubleValue());
 	}
 
 	/**
