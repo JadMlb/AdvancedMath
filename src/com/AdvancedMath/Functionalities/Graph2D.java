@@ -174,6 +174,8 @@ public class Graph2D
 		NumberAxis xAxis = new NumberAxis(), yAxis = new NumberAxis();
 		xAxis.setLabel (axesNames[0]);
 		yAxis.setLabel (axesNames[1]);
+		xAxis.setForceZeroInRange (false);
+		yAxis.setForceZeroInRange (false);
 
 		BorderPane bp = new BorderPane();
 		
