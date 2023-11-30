@@ -11,6 +11,7 @@ import com.AdvancedMath.Graphs.Function2D;
 import com.AdvancedMath.Graphs.MultiRangeFunction2D;
 import com.AdvancedMath.Graphs.Range;
 import com.AdvancedMath.Numbers.FloatValue;
+import com.AdvancedMath.Numbers.FractionValue;
 import com.AdvancedMath.Numbers.Number;
 
 import javafx.event.ActionEvent;
@@ -24,6 +25,7 @@ import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
 import javafx.scene.input.KeyEvent;
+import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.paint.Color;
@@ -34,9 +36,9 @@ import javafx.scene.paint.Color;
  */
 public class Graph2D
 {
-	public static int RANGE_LENGTH = 20;
-	private static int DEFAULT_RANGE_START = -10;
-	public static Range DEFAULT_RANGE = new Range (DEFAULT_RANGE_START, true, true, DEFAULT_RANGE_START + RANGE_LENGTH);
+	public static final int RANGE_LENGTH = 20;
+	private static final int DEFAULT_RANGE_START = -10;
+	public static final Range DEFAULT_RANGE = new Range (DEFAULT_RANGE_START, true, true, DEFAULT_RANGE_START + RANGE_LENGTH);
 	
 	private Range graphRange;
 	private String[] axesNames;
@@ -44,6 +46,7 @@ public class Graph2D
 	private double xStep;
 	private HashMap<Function, Color> fnColors = new HashMap<>();
 	private HashMap<Function, ArrayList<Number>> fnPoints = new HashMap<>();
+	private int xStart = 0, yStart = 0; // used for dragging on the graph to move it
 
 	/**
 	 * Creates a new Graph with the ability to customise any of its characteristics.
@@ -117,8 +120,6 @@ public class Graph2D
 		
 		for (double i = graphRange.getLowerBound().getDoubleValue(); i <= graphRange.getUpperBound().getDoubleValue() && i <= 1000; i += xStep)
 		{
-			if (i < 1 && i > 0.99)
-				System.out.println ("1");
 			Number x = Number.real (i);
 			values.put (varName, x);
 			
@@ -177,7 +178,46 @@ public class Graph2D
 		BorderPane bp = new BorderPane();
 		
 		LineChart<java.lang.Number, java.lang.Number> graph = new LineChart<java.lang.Number, java.lang.Number> (xAxis, yAxis);
+		
 		constructGraph (graph, xAxis, yAxis);
+
+		graph.setOnMousePressed
+		(
+			new EventHandler<MouseEvent> ()
+			{
+				@Override
+				public void handle (MouseEvent e)
+				{
+					xStart = (int) e.getSceneX();
+					yStart = (int) e.getSceneY();
+				}
+			}
+		);
+
+		graph.setOnMouseDragged
+		(
+			new EventHandler<MouseEvent> ()
+			{
+				@Override
+				public void handle (MouseEvent e)
+				{	
+					int moveAmount =  (int) (xStart - e.getSceneX());
+					
+					graphRange.setLowerBound (graphRange.getLowerBound().add (FractionValue.integer (moveAmount)));
+					graphRange.setUpperBound (graphRange.getUpperBound().add (FractionValue.integer (moveAmount)));
+					
+					xStart = (int) e.getSceneX();
+					yStart = (int) e.getSceneY();
+
+					fnPoints.clear();
+					for (Function f : fnColors.keySet())
+					{
+						getPoints (f);
+						constructGraph (graph, xAxis, yAxis);
+					}
+				}
+			}
+		);
 		
 		graph.setCursor (Cursor.CROSSHAIR);
 		graph.setCreateSymbols (false);
