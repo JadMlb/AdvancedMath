@@ -272,4 +272,12 @@ public class MultiRangeFunction2D extends Function
 		d.addFunctionDefiniton (Range.gt (upper), new NumberNode (Number.ZERO));
 		return d;
 	}
+
+	public static MultiRangeFunction2D sgn ()
+	{
+		MultiRangeFunction2D sgn = new MultiRangeFunction2D ("sgn", "x", Range.lt (new FloatValue (1e-7)), new NumberNode (Number.real (-1.)));
+		sgn.addFunctionDefiniton (new Range (-1e-7, true, true, 1e-7), new NumberNode (Number.ZERO));
+		sgn.addFunctionDefiniton (Range.gt (new FloatValue (1e-7)), new NumberNode (Number.ONE));
+		return sgn;
+	}
 }
