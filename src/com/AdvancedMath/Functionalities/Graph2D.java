@@ -13,6 +13,7 @@ import com.AdvancedMath.Graphs.Range;
 import com.AdvancedMath.Numbers.FloatValue;
 import com.AdvancedMath.Numbers.FractionValue;
 import com.AdvancedMath.Numbers.Number;
+import com.AdvancedMath.Numbers.Value;
 
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
@@ -46,7 +47,7 @@ public class Graph2D
 	private double xStep;
 	private HashMap<Function, Color> fnColors = new HashMap<>();
 	private HashMap<Function, ArrayList<Number>> fnPoints = new HashMap<>();
-	private int xStart = 0, yStart = 0; // used for dragging on the graph to move it
+	private int xStart = 0; // used for dragging on the graph to move it
 
 	/**
 	 * Creates a new Graph with the ability to customise any of its characteristics.
@@ -191,7 +192,6 @@ public class Graph2D
 				public void handle (MouseEvent e)
 				{
 					xStart = (int) e.getSceneX();
-					yStart = (int) e.getSceneY();
 				}
 			}
 		);
@@ -202,20 +202,62 @@ public class Graph2D
 			{
 				@Override
 				public void handle (MouseEvent e)
-				{	
-					int moveAmount =  (int) (xStart - e.getSceneX());
+				{
+					Value moveAmount =  new FloatValue(xStart - e.getSceneX()).divide (FractionValue.integer (20));
+
+					if (moveAmount.equals (FractionValue.ZERO))
+						return;
 					
-					graphRange.setLowerBound (graphRange.getLowerBound().add (FractionValue.integer (moveAmount)));
-					graphRange.setUpperBound (graphRange.getUpperBound().add (FractionValue.integer (moveAmount)));
+					Value oldLower = graphRange.getLowerBound(), oldUpper = graphRange.getUpperBound();
+
+					graphRange.setLowerBound (graphRange.getLowerBound().add (moveAmount));
+					graphRange.setUpperBound (graphRange.getUpperBound().add (moveAmount));
+
+					MultiRangeFunction2D sgn = MultiRangeFunction2D.sgn();
+					HashMap<String, Number> vars = new HashMap<>();
+					vars.put ("x", Number.real (moveAmount));
+					NumberNode direction = (NumberNode) sgn.of (vars);
+
+					Value start = graphRange.getLowerBound(), stop = graphRange.getUpperBound();
+					int index = 0;
+					if (direction.getValue().getX().getDoubleValue() == 1)
+					{
+						index = 0;
+						start = oldUpper;
+					}
+					else
+					{
+						index = graph.getData().size() - 1;
+						stop = oldLower;
+					}
 					
 					xStart = (int) e.getSceneX();
-					yStart = (int) e.getSceneY();
 
-					fnPoints.clear();
-					for (Function f : fnColors.keySet())
+					// only add new points
+					int fnIdx = 0;
+					for (Function f : fnPoints.keySet())
 					{
-						getPoints (f);
-						constructGraph (graph, xAxis, yAxis);
+						for (Value i = start; i.compare (stop) == -1; i = i.add (new FloatValue (xStep)))
+						{
+							Number x = Number.real (i);
+							HashMap<String, Number> values = new HashMap<>();
+							values.put (f.getVariables().iterator().next(), x);
+							
+							try
+							{
+								Node res = f.of (values);
+								if (res instanceof NumberNode n)
+								{
+									graph.getData().get(fnIdx).getData().remove (index);
+									graph.getData().get(fnIdx).getData().add (new XYChart.Data<java.lang.Number, java.lang.Number> (n.getValue().getX().getDoubleValue(), n.getValue().getY().getDoubleValue()));
+								}
+								else
+									// TODO: Add support for sliders in this case
+									throw new NumberFormatException ("This function is not a 2D function and thus returned a variable result");
+							}
+							catch (Exception ex) {}
+						}
+						fnIdx++;
 					}
 				}
 			}
