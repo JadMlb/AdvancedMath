@@ -219,24 +219,26 @@ public class Graph2D
 					NumberNode direction = (NumberNode) sgn.of (vars);
 
 					Value start = graphRange.getLowerBound(), stop = graphRange.getUpperBound();
-					int index = 0;
-					if (direction.getValue().getX().getDoubleValue() == 1)
-					{
-						index = 0;
-						start = oldUpper;
-					}
-					else
-					{
-						index = graph.getData().size() - 1;
-						stop = oldLower;
-					}
 					
 					xStart = (int) e.getSceneX();
+					System.out.println (start + "\t" + stop);
 
 					// only add new points
 					int fnIdx = 0;
 					for (Function f : fnPoints.keySet())
 					{
+						int index = 0;
+						if (direction.getValue().getX().getDoubleValue() == 1)
+						{
+							index = 0;
+							start = oldUpper;
+						}
+						else
+						{
+							index = graph.getData().get(fnIdx).getData().size() - 1;
+							stop = oldLower;
+						}
+						
 						for (Value i = start; i.compare (stop) == -1; i = i.add (new FloatValue (xStep)))
 						{
 							Number x = Number.real (i);
