@@ -281,6 +281,16 @@ public class Range implements Cloneable
 	}
 
 	/**
+	 * Gets the length of a range which is the distance between lower and upper range
+	 * 
+	 * @return The length of the range
+	 */
+	public double length ()
+	{
+		return upper.getDoubleValue() - lower.getDoubleValue();
+	}
+
+	/**
 	 * Creates a range that represents the operation greater than (>), which translates to x in (v, +inf)
 	 * 
 	 * @param v The lower bound of the range
