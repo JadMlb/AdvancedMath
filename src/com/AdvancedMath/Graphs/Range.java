@@ -281,6 +281,40 @@ public class Range implements Cloneable
 	}
 
 	/**
+	 * Removes the intersection of the ranges from the first range and returns the resulting split ranges
+	 * 
+	 * @param r The range whose intersection will split the first one
+	 * @return The list of remaining parts of the original range after splitting
+	 */
+	public Range[] subtract (Range r)
+	{
+		Range intersect = getIntersectingRange (r);
+		
+		if (intersect == null)
+			throw new IllegalArgumentException ("Provided range is outside the bounds of this range.");
+
+		Range lowerPart = null, upperPart = null;
+
+		if (this.lower.compare (intersect.lower) == -1 || this.lower.compare (intersect.lower) == 0 && !intersect.includeLower)
+		{
+			lowerPart = new Range (this.lower, this.includeLower, intersect.includeLower, intersect.lower);
+		}
+		
+		if (intersect.upper.compare (this.upper) == -1 || intersect.upper.compare (this.upper) == 0 && !intersect.includeUpper)
+		{
+			upperPart = new Range (intersect.upper, intersect.includeUpper, this.includeUpper, this.upper);
+		}
+
+		if (lowerPart != null && upperPart == null)
+			return new Range[] {lowerPart};
+			
+		if (lowerPart == null && upperPart != null)
+			return new Range[] {upperPart};
+		
+		return new Range[] {lowerPart, upperPart};
+	}
+
+	/**
 	 * Gets the length of a range which is the distance between lower and upper range
 	 * 
 	 * @return The length of the range
