@@ -134,6 +134,23 @@ public class Range implements Cloneable
 		else
 			this.upper = v;
 	}
+
+	/**
+	 * Sets both bounds of a range. Calls {@link Range#setLowerBound(Value)} and {@link Range#setUpperBound(Value)}.
+	 * 
+	 * @param lower New lower bound
+	 * @param upper New upper bound
+	 * 
+	 * @throws IllegalArgumentException if any of the bounds is equal to the previous value
+	 * 
+	 * @see Range#setLowerBound(Value)
+	 * @see Range#setUpperBound(Value)
+	 */
+	public void setBounds (Value lower, Value upper)
+	{
+		setLowerBound (lower);
+		setUpperBound (upper);
+	}
 	
 	public boolean isLowerIncluded ()
 	{
@@ -293,24 +310,36 @@ public class Range implements Cloneable
 		if (intersect == null)
 			throw new IllegalArgumentException ("Provided range is outside the bounds of this range.");
 
-		Range lowerPart = null, upperPart = null;
+		Range lowerPart = new Range (0, 1), upperPart = new Range (0, 1);
 
-		if (this.lower.compare (intersect.lower) == -1 || this.lower.compare (intersect.lower) == 0 && !intersect.includeLower)
+		if (this.lower.compare (r.lower) <= 0)
 		{
-			lowerPart = new Range (this.lower, this.includeLower, intersect.includeLower, intersect.lower);
+			lowerPart.lower = this.lower.clone();
+			lowerPart.includeLower = this.includeLower;
+		}
+		else
+		{
+			lowerPart.lower = r.lower.clone();
+			lowerPart.includeLower = this.includeLower;
 		}
 		
-		if (intersect.upper.compare (this.upper) == -1 || intersect.upper.compare (this.upper) == 0 && !intersect.includeUpper)
+		if (this.upper.compare (r.upper) >= 0)
 		{
-			upperPart = new Range (intersect.upper, intersect.includeUpper, this.includeUpper, this.upper);
+			upperPart.upper = this.upper.clone();
+			upperPart.includeUpper = this.includeUpper;
+		}
+		else
+		{
+			upperPart.upper = r.upper.clone();
+			upperPart.includeUpper = r.includeUpper;
 		}
 
-		if (lowerPart != null && upperPart == null)
-			return new Range[] {lowerPart};
-			
-		if (lowerPart == null && upperPart != null)
-			return new Range[] {upperPart};
+		lowerPart.upper = intersect.lower.clone();
+		lowerPart.includeUpper = !intersect.includeLower;
 		
+		upperPart.lower = intersect.upper.clone();
+		upperPart.includeLower = !intersect.includeUpper;
+
 		return new Range[] {lowerPart, upperPart};
 	}
 
@@ -402,7 +431,7 @@ public class Range implements Cloneable
 			return true;
 
 		if (o instanceof Range r)
-			return this.lower == r.lower && this.includeLower == r.includeLower && this.upper == r.upper && this.includeUpper == r.includeUpper;
+			return this.lower.equals (r.lower) && this.includeLower == r.includeLower && this.upper.equals (r.upper) && this.includeUpper == r.includeUpper;
 		
 		return false;
 	}
