@@ -1,343 +1,516 @@
 package com.AdvancedMath.Functionalities;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.regex.Pattern;
+import java.awt.BasicStroke;
+import java.awt.Color;
+import java.awt.FontMetrics;
+import java.awt.Graphics;
+import java.awt.Graphics2D;
 
-import com.AdvancedMath.EqTree.Node;
+import java.awt.event.MouseListener;
+import java.awt.event.MouseMotionListener;
+import java.awt.event.MouseWheelEvent;
+import java.awt.event.MouseWheelListener;
+import java.awt.event.MouseEvent;
+
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.TreeMap;
+
+import javax.swing.JFrame;
+import javax.swing.JPanel;
+
 import com.AdvancedMath.EqTree.NumberNode;
 import com.AdvancedMath.Graphs.Function;
-import com.AdvancedMath.Graphs.Function2D;
-import com.AdvancedMath.Graphs.MultiRangeFunction2D;
+import com.AdvancedMath.Graphs.Point;
 import com.AdvancedMath.Graphs.Range;
 import com.AdvancedMath.Numbers.FloatValue;
 import com.AdvancedMath.Numbers.FractionValue;
 import com.AdvancedMath.Numbers.Number;
 import com.AdvancedMath.Numbers.Value;
+import com.AdvancedMath.Numbers.ValueComparator;
 
-import javafx.event.ActionEvent;
-import javafx.event.EventHandler;
-import javafx.scene.Cursor;
-import javafx.scene.Scene;
-import javafx.scene.chart.LineChart;
-import javafx.scene.chart.NumberAxis;
-import javafx.scene.chart.XYChart;
-import javafx.scene.control.Button;
-import javafx.scene.control.Label;
-import javafx.scene.control.TextField;
-import javafx.scene.input.KeyEvent;
-import javafx.scene.input.MouseEvent;
-import javafx.scene.layout.BorderPane;
-import javafx.scene.layout.HBox;
-import javafx.scene.paint.Color;
-
-/**
- * A class that plots multiple functions on a {@code javafx.scene.Scene}.
- * Can be displayed in its own frame or it can be added to one
- */
 public class Graph2D
 {
-	public static final int RANGE_LENGTH = 20;
-	private static final int DEFAULT_RANGE_START = -10;
-	public static final Range DEFAULT_RANGE = new Range (DEFAULT_RANGE_START, true, true, DEFAULT_RANGE_START + RANGE_LENGTH);
-	
-	private Range graphRange;
-	private String[] axesNames;
-	private String title;
-	private double xStep;
+	private double step = .01;
+	private String title = "Graph";
+	private Range windowHoriz = new Range (0, 2), windowVert = new Range (0, 2);
+	private String[] axesNames = new String[] {"x", "y"};
 	private HashMap<Function, Color> fnColors = new HashMap<>();
-	private HashMap<Function, ArrayList<Number>> fnPoints = new HashMap<>();
-	private int xStart = 0; // used for dragging on the graph to move it
+	private HashMap<Function, TreeMap<Value, Value>> fnPoints = new HashMap<>();
 
 	/**
-	 * Creates a new Graph with the ability to customise any of its characteristics.
+	 * Constructs a {@code Graph2D} instance with the restrictions provided
 	 * 
-	 * @param title
-	 * @param graphRange
-	 * @param axesNames
-	 * @param xStep
-	 * 
-	 * @see Graph2D#Graph2D(String)
-	 * @see Graph2D#Graph2D(String, Range)
-	 * @see Graph2D#Graph2D(String, String[], Range)
+	 * @param title The title to give this graph. Defaults to "Graph".
+	 * @param windowHoriz The horizontal window that the graph covers (on the x axis). Defaluts to [-1, 1] inclusive.
+	 * @param windowVert The vertical window that the graph covers (on the y axis). Defaluts to [-1, 1] inclusive.
+	 * @param axesNames The labels to be given to the axes. If empty array, or array of length 1 is given, the result is the default value. If an array of length 2 and more is provided, only the first 2 elements are considered. Defaults to ["x", "y"].
+	 * @param step The sampling step on the x axis to calculate the values of the graph's functions and draw them. If this value is too small, the programme will take long to generate the graph. If it is too big, the quality of the graph is compromised, even sometimes no graph can be generated. Defaults to 0.01.
 	 */
-	public Graph2D (String title, Range graphRange, String[] axesNames, double xStep) 
+	public Graph2D (String title, Range windowHoriz, String[] axesNames, double step)
 	{
-		if (graphRange == null)
-			this.graphRange = DEFAULT_RANGE;
-		else
-			this.graphRange = graphRange;
-		if (this.graphRange.getLowerBound().getDoubleValue() == Double.NEGATIVE_INFINITY)
-			if (this.graphRange.getUpperBound().getDoubleValue() == Double.POSITIVE_INFINITY)
-				this.graphRange = DEFAULT_RANGE;
-			else
-				this.graphRange.setLowerBound (this.graphRange.getUpperBound().subtract (new FloatValue (Double.valueOf (RANGE_LENGTH))));
-		else if (this.graphRange.getUpperBound().getDoubleValue() == Double.POSITIVE_INFINITY)
-			this.graphRange.setUpperBound (this.graphRange.getLowerBound().add (new FloatValue (Double.valueOf (RANGE_LENGTH))));
+		if (title != null)
+			this.title = title;
+
+		if (windowHoriz != null && windowHoriz.length() <= 100)
+		{
+			this.windowHoriz = windowHoriz;
+			this.windowVert = windowHoriz.clone();
+		}
 
 		if (axesNames != null && axesNames.length >= 2)
-			this.axesNames = axesNames;
-		else
-			this.axesNames = new String [] {"x", "y"};
-		if (title != null && !title.trim().isEmpty())
-			this.title = title.trim();
-		else
-			this.title = "Graph";
-		if (xStep > 0.001 && xStep <= 1)
-			this.xStep = xStep;
-		else
-			this.xStep = 0.01;
+		{
+			this.axesNames[0] = axesNames[0];
+			this.axesNames[1] = axesNames[1];
+		}
+
+		if (step > 0)
+			this.step = step;
 	}
 
+	/**
+	 * Constructs a graph with default values.
+	 * 
+	 * @see Graph2D#Graph2D2(String, Range, String[], double)
+	 */
+	public Graph2D ()
+	{
+		this (null, null, null, 0);
+	}
+
+	/**
+	 * Constucts a graph with specified title, and default values for the other properties.
+	 * 
+	 * @param title The title of the graph
+	 * 
+	 * @see Graph2D#Graph2D2(String, Range, String[], double)
+	 */
 	public Graph2D (String title)
 	{
 		this (title, null, null, 0);
 	}
-
-	public Graph2D (String title, Range graphRange)
-	{
-		this (title, graphRange, null, 0);
-	}
-
-	public Graph2D (String title, String[] axesNames, Range graphRange)
-	{
-		this (title, graphRange, axesNames, 0);
-	}
-
-	public String getTitle ()
-	{
-		return title;
-	}
 	
-	public void setTitle (String title)
+	/**
+	 * Constucts a graph with specified title & axes labels, and default values for the other properties.
+	 * 
+	 * @param title The title of the graph
+	 * @param axesNames The labels of the axes
+	 * 
+	 * @see Graph2D#Graph2D2(String, Range, String[], double)
+	 */
+	public Graph2D (String title, String[] axesNames)
+	{
+		this (title, null, null, 0);
+	}
+
+	public double getStep() 
+	{
+		return this.step;
+	}
+
+	public void setStep (double step) throws IllegalArgumentException
+	{
+		if (step <= 0)
+			throw new IllegalArgumentException ("The step size cannot be 0 or negative.");
+		this.step = step;
+	}
+
+	public String getTitle () 
+	{
+		return this.title;
+	}
+
+	public void setTitle (String title) 
 	{
 		this.title = title;
 	}
 
-	private void getPoints (Function f)
+	public Range getHorizontalWindow () 
 	{
-		HashMap<String, Number> values = new HashMap<>();
-		String varName = f.getVariables().iterator().next();
-		
-		for (double i = graphRange.getLowerBound().getDoubleValue(); i <= graphRange.getUpperBound().getDoubleValue() && i <= 1000; i += xStep)
-		{
-			Number x = Number.real (i);
-			values.put (varName, x);
-			
-			if (fnPoints.get (f) == null)
-				fnPoints.put (f, new ArrayList<>());
+		return this.windowHoriz.clone();
+	}
 
+	public void setHorizontalWindow (Range windowHoriz) throws NullPointerException, IllegalArgumentException
+	{
+		if (windowHoriz == null)
+			throw new NullPointerException ("The new horizontal window size must not be null.");
+		
+		if (windowHoriz.length() <= 0 || windowHoriz.length() > 100)
+			throw new IllegalArgumentException ("The new horizontal window size has unsupported size.");
+
+		this.windowHoriz = windowHoriz;
+		this.windowVert = windowHoriz.clone();
+	}
+
+	public String[] getAxesNames() 
+	{
+		return this.axesNames;
+	}
+
+	public void setAxesNames (String[] axesNames) throws NullPointerException, IllegalArgumentException
+	{
+		if (axesNames == null)
+			throw new NullPointerException ("The new labels for the axes must not be null");
+		
+		if (axesNames.length < 2)
+			throw new IllegalArgumentException ("The array of new axes labels must contain at least 2 elements");
+		
+		this.axesNames[0] = axesNames[0];
+		this.axesNames[1] = axesNames[1];
+	}
+
+	private void getPoints (Function f, Range hr, Range vr)
+	{
+		double start = hr.getLowerBound().getDoubleValue(), end = hr.getUpperBound().getDoubleValue();
+		if (!hr.isLowerIncluded())
+			start += step;
+		if (!hr.isUpperIncluded())
+			end -= step;
+		if (fnPoints.get (f) == null)
+			fnPoints.put (f, new TreeMap<> (new ValueComparator()));
+		
+		for (double i = start; i <= end; i += step)
+		{
 			try
 			{
-				Node res = f.of (values);
-				if (res instanceof NumberNode n)
-					fnPoints.get(f).add (new Number (x.getX(), n.getValue().getX()));
-				else
-					// TODO: Add support for sliders in this case
-					throw new NumberFormatException ("This function is not a 2D function and thus returned a variable result");
+				HashMap<String, Number> xMapping = new HashMap<>();
+				xMapping.put (f.getVariables().iterator().next(), Number.real (i));
+
+				NumberNode nb = (NumberNode) f.of (xMapping);
+				// if (vr.contains (nb.getValue().getX()))
+					fnPoints.get(f).put (new FloatValue (i), nb.getValue().getX());
 			}
 			catch (Exception e) {}
 		}
 	}
 
 	/**
-	 * Adds a function to the set to be plotted. Will not display the plotted function, nor the graph
+	 * The function that is to be added to the set of plotted functions on the graph
 	 * 
-	 * @param function {@code Function} to be plotted
-	 * @param color	{@code Color} that this function will be plotted with
-	 * @see Graph2D#display()
-	 * @throws NullPointerException if the given function is null
-	 * @throws IllegalArgumentException if the function is not a {@link Function2D}
+	 * @param f The new function to be plotted
+	 * @param c The color of the curve representing this function on the graph
 	 */
-	public void plot (Function function, Color color)
+	public void plotFunction (Function f, Color c)
 	{
-		if (function == null)
-			throw new NullPointerException ("The function to be plotted cannot be null");
-
-		if (function instanceof Function2D || function instanceof MultiRangeFunction2D)
-		{
-			fnColors.put (function, color);
-			getPoints (function);
-		}
-		else
-			throw new IllegalArgumentException ("The function plotted on a 2D graph must be 2D by itself");
+		fnColors.put (f, c);
+		getPoints (f, windowHoriz, windowVert);
+	}
+	
+	/**
+	 * Removes a given function from the graph
+	 * 
+	 * @param f The function to remove
+	 */
+	public void removeFunction (Function f)
+	{
+		fnColors.remove (f);
+		fnPoints.remove (f);
 	}
 
 	/**
-	 * Returns this graph in its own {@code javafx.scene.Scene} to be used in a JavaFX stage
-	 * 
-	 * <p>Use this function to refresh and rebuild the graph
-	 * 
-	 * @return a {@code javafx.scene.Scene} with this graph in it
+	 * Displays the graph in a new {@code JFrame}
 	 */
-	public Scene display ()
-	{	
-		NumberAxis xAxis = new NumberAxis(), yAxis = new NumberAxis();
-		xAxis.setLabel (axesNames[0]);
-		yAxis.setLabel (axesNames[1]);
-		xAxis.setForceZeroInRange (false);
-		yAxis.setForceZeroInRange (false);
-
-		BorderPane bp = new BorderPane();
+	public void display ()
+	{
+		JFrame frame = new JFrame ("Graph: " + title);
+		frame.setSize (1000, 700);
 		
-		LineChart<java.lang.Number, java.lang.Number> graph = new LineChart<java.lang.Number, java.lang.Number> (xAxis, yAxis);
-		
-		constructGraph (graph, xAxis, yAxis);
+		GraphArea graphArea = new GraphArea (fnPoints, fnColors, windowHoriz, windowVert, axesNames, step);
+		frame.add (graphArea);
 
-		graph.setOnMousePressed
-		(
-			new EventHandler<MouseEvent> ()
-			{
-				@Override
-				public void handle (MouseEvent e)
-				{
-					xStart = (int) e.getSceneX();
-				}
-			}
-		);
+		frame.setDefaultCloseOperation (JFrame.EXIT_ON_CLOSE);
+		frame.setVisible (true);
+	}
+}
 
-		graph.setOnMouseDragged
-		(
-			new EventHandler<MouseEvent> ()
-			{
-				@Override
-				public void handle (MouseEvent e)
-				{
-					Value moveAmount =  new FloatValue(xStart - e.getSceneX()).divide (FractionValue.integer (20));
+class GraphArea extends JPanel implements MouseListener, MouseMotionListener, MouseWheelListener
+{
+	private HashMap<Function, Color> fnColors;
+	private HashMap<Function, TreeMap<Value, Value>> fnPoints;
+	private Range windowHoriz, windowVert;
+	private int size;
+	private String[] axesNames;
+	private double step;
+	private Point start, O, oldO;
 
-					if (moveAmount.equals (FractionValue.ZERO))
-						return;
-					
-					Value oldLower = graphRange.getLowerBound(), oldUpper = graphRange.getUpperBound();
-
-					graphRange.setLowerBound (graphRange.getLowerBound().add (moveAmount));
-					graphRange.setUpperBound (graphRange.getUpperBound().add (moveAmount));
-
-					MultiRangeFunction2D sgn = MultiRangeFunction2D.sgn();
-					HashMap<String, Number> vars = new HashMap<>();
-					vars.put ("x", Number.real (moveAmount));
-					NumberNode direction = (NumberNode) sgn.of (vars);
-
-					Value start = graphRange.getLowerBound(), stop = graphRange.getUpperBound();
-					
-					xStart = (int) e.getSceneX();
-					System.out.println (start + "\t" + stop);
-
-					// only add new points
-					int fnIdx = 0;
-					for (Function f : fnPoints.keySet())
-					{
-						int index = 0;
-						if (direction.getValue().getX().getDoubleValue() == 1)
-						{
-							index = 0;
-							start = oldUpper;
-						}
-						else
-						{
-							index = graph.getData().get(fnIdx).getData().size() - 1;
-							stop = oldLower;
-						}
-						
-						for (Value i = start; i.compare (stop) == -1; i = i.add (new FloatValue (xStep)))
-						{
-							Number x = Number.real (i);
-							HashMap<String, Number> values = new HashMap<>();
-							values.put (f.getVariables().iterator().next(), x);
-							
-							try
-							{
-								Node res = f.of (values);
-								if (res instanceof NumberNode n)
-								{
-									graph.getData().get(fnIdx).getData().remove (index);
-									graph.getData().get(fnIdx).getData().add (new XYChart.Data<java.lang.Number, java.lang.Number> (n.getValue().getX().getDoubleValue(), n.getValue().getY().getDoubleValue()));
-								}
-								else
-									// TODO: Add support for sliders in this case
-									throw new NumberFormatException ("This function is not a 2D function and thus returned a variable result");
-							}
-							catch (Exception ex) {}
-						}
-						fnIdx++;
-					}
-				}
-			}
-		);
-		
-		graph.setCursor (Cursor.CROSSHAIR);
-		graph.setCreateSymbols (false);
-		graph.setLegendVisible (false);
-
-		bp.setCenter (graph);
-
-		HBox scope = new HBox();
-		scope.getChildren().add (new Label ("Centred on: "));
-
-		TextField centreOn = new TextField();
-		centreOn.setOnKeyTyped (
-			new EventHandler<KeyEvent> ()
-			{
-				@Override
-				public void handle (KeyEvent e)
-				{
-					if (!Pattern.matches ("[0-9.,\\-]*", centreOn.getText()))
-					// if (!Character.isDigit (e.getCharacter().charAt (0)) && e.getCharacter().charAt (0) != '-'  && e.getCharacter().charAt (0) != '.' && e.getCharacter().charAt (0) != ',' && e.getCharacter().charAt (0) != '\b')
-						centreOn.setText (centreOn.getText (0, centreOn.getText().length() - 1));
-				}
-			}
-		);
-		scope.getChildren().add (centreOn);
-
-		Button refresh = new Button ("Refresh");
-		refresh.setOnAction (
-			new EventHandler<ActionEvent> ()
-			{
-				@Override
-				public void handle (ActionEvent e)
-				{
-					Range newRange = new Range (Double.parseDouble (centreOn.getText()), RANGE_LENGTH);
-					if (!graphRange.equals (newRange))
-					{
-						graphRange = newRange;
-						fnPoints.clear();
-						for (Function f : fnColors.keySet())
-						{
-							getPoints (f);
-							constructGraph (graph, xAxis, yAxis);
-						}
-					}
-				}	
-			}
-		);
-		scope.getChildren().add (refresh);
-
-		bp.setBottom (scope);
-
-		return new Scene (bp);
+	public GraphArea (HashMap<Function, TreeMap<Value, Value>> fnPoints, HashMap<Function, Color> fnColors, Range windowHoriz, Range windowVert, String[] axesNames, double step)
+	{
+		this.fnPoints = fnPoints;
+		this.fnColors = fnColors;
+		this.size = fnPoints.get(fnPoints.keySet().iterator().next()).size();
+		this.windowHoriz = windowHoriz;
+		this.windowVert = windowVert;
+		this.axesNames = axesNames;
+		this.step = step;
+		addMouseListener (this);
+		addMouseMotionListener (this);
+		addMouseWheelListener (this);
 	}
 
-	private void constructGraph (LineChart<java.lang.Number, java.lang.Number> graph, NumberAxis xAxis, NumberAxis yAxis)
+	private void removePoints (Function f, Range r)
 	{
-		for (int i = graph.getData().size() - 1; i >= 0; i--)
-			graph.getData().remove (i);
+		if (fnPoints.get (f) != null)
+			for (Iterator<Value> it = fnPoints.get(f).keySet().iterator(); it.hasNext();)
+			{
+				Value x = it.next();
+				
+				if (r.contains (x))
+				{
+					it.remove();
 
-		for (Function f : fnPoints.keySet())
+					if (f == fnPoints.keySet().iterator().next()) // only first function updates size
+						size--;
+				}
+			}
+	}
+
+	private void getPoints (Function f, Range hr)
+	{
+		double start = hr.getLowerBound().getDoubleValue(), end = hr.getUpperBound().getDoubleValue();
+		if (fnPoints.get (f) == null)
+			fnPoints.put (f, new TreeMap<> (new ValueComparator()));
+		
+		for (double i = start; i <= end; i += step)
 		{
-			XYChart.Series<java.lang.Number,java.lang.Number> series = new XYChart.Series<java.lang.Number,java.lang.Number>();
-			for (Number pt : fnPoints.get (f))
-				series.getData().add (new XYChart.Data<java.lang.Number, java.lang.Number> (pt.getX().getDoubleValue(), pt.getY().getDoubleValue()));
-			
-			graph.getData().add (series);
-			
-			series.setName (f.getName());
-			String rgb = String.format (
-				"%d, %d, %d",
-				(int) (fnColors.get(f).getRed() * 255),
-				(int) (fnColors.get(f).getGreen() * 255),
-				(int) (fnColors.get(f).getBlue() * 255)
-			);
-			series.getNode().lookup(".chart-series-line").setStyle ("-fx-stroke: rgba(" + rgb + ", 1.0);");	
+			try
+			{
+				HashMap<String, Number> xMapping = new HashMap<>();
+				xMapping.put (f.getVariables().iterator().next(), Number.real (i));
+
+				NumberNode nb = (NumberNode) f.of (xMapping);
+				fnPoints.get(f).put (new FloatValue (i), nb.getValue().getX());
+				if (f == fnPoints.keySet().iterator().next()) // only first function updates size
+					size++;
+			}
+			catch (Exception e) {}
 		}
 	}
+
+	private void refreshGraph (Range oldX, Range oldY, Range newX, Range newY)
+	{
+		if (newX == null && !newY.equals (oldY))
+		{
+			Range yOverlap = oldY.getIntersectingRange (newY);
+			// 3 cases
+			// null: no overlap => new set of points (shift up or down)
+			// not null:
+			// 		newY is in oldY => remove extra points
+			// 		oldY is in newY => add extra points
+			if (yOverlap == null)
+			{
+				for (Function f: fnPoints.keySet())
+				{
+					fnPoints.get(f).clear();
+					getPoints (f, newX);
+				}
+			}
+			else
+			{
+				Range[] newPointsRanges = oldY.subtract (newY);
+
+				for (Range r : newPointsRanges)
+				{
+					// #################					oldY
+					// 				-----------------		newY
+					//				****					inter
+					// #############	-------------		split
+					// 				-----------------		oldY
+					// #################					newY
+					//				****					inter
+					// #############	-------------		split
+					for (Function f : fnPoints.keySet())
+						if (r.getUpperBound().equals (newY.getLowerBound()) || r.getLowerBound().equals (newY.getUpperBound())) // to remove
+							removePoints (f, r);
+						else
+							getPoints (f, oldX);
+				}
+			}
+			
+			windowVert.setBounds (newY.getLowerBound(), newY.getUpperBound());
+		}
+		else if (!newX.equals (oldX) && newY == null)
+		{
+			Range xOverlap = oldX.getIntersectingRange (newX);
+			if (xOverlap == null)
+			{
+				for (Function f: fnPoints.keySet())
+				{
+					fnPoints.get(f).clear();
+					getPoints (f, newX);
+				}
+			}
+			else
+			{
+				Range[] newPointsRanges = oldX.subtract (newX);
+
+				for (Range r : newPointsRanges)
+				{
+					for (Function f : fnPoints.keySet())
+						if (r.getUpperBound().equals (newX.getLowerBound()) || r.getLowerBound().equals (newX.getUpperBound())) // to remove
+							removePoints (f, r);
+						else
+							getPoints (f, r);
+				}
+			}
+			windowHoriz.setBounds (newX.getLowerBound(), newX.getUpperBound());
+		}
+	}
+				
+	@Override
+	public void paintComponent (Graphics g)
+	{
+		Graphics2D g2d = (Graphics2D) g;
+
+		if (this.O == null)
+			this.O = new Point (new FloatValue (getWidth() / 2.0), new FloatValue (getHeight() / 2.0));
+
+		int nbDivs = (int) (windowHoriz.getUpperBound().subtract(windowHoriz.getLowerBound()).getDoubleValue());
+		FloatValue scaleX = new FloatValue ((double) (getWidth() - 20) / nbDivs);
+		FloatValue scaleY = new FloatValue ((double) (getHeight() - 20) / nbDivs);
+
+		FontMetrics metrics = g.getFontMetrics();
+
+		// draw axes
+		g2d.setStroke (new BasicStroke (.75f));
+		g2d.setPaint (Color.BLACK);
+		// x axis
+		g2d.drawLine (0, (int) O.getY().getDoubleValue(), getWidth(), (int) O.getY().getDoubleValue());
+		g2d.drawString (axesNames[0], getWidth() - metrics.stringWidth (axesNames[0]) - 10, (int) O.getY().getDoubleValue() + metrics.getHeight());
+		// y axis
+		g2d.drawLine ((int) O.getX().getDoubleValue(), 0, (int) O.getX().getDoubleValue(), getHeight());
+		g2d.drawString (axesNames[1], (int) O.getX().getDoubleValue() + 10, 10);
+
+		// put label for origin
+		g2d.drawString ("O", (int) O.getX().getDoubleValue() + 5, (int) O.getY().getDoubleValue() + 15);
+
+		// draw grid
+		int count = 0;
+		for (double i = windowHoriz.getLowerBound().getDoubleValue(); i <= windowHoriz.getUpperBound().getDoubleValue(); i += 10 * step)
+		{
+			g2d.setFont (getFont().deriveFont (10f));
+			
+			if (i != 0)
+			{
+				g2d.setPaint (Color.BLACK);
+				g2d.setStroke (new BasicStroke (.75f));
+
+				// draw x axis scale
+				g2d.drawLine ((int) (O.getX().getDoubleValue() + i * scaleX.getDoubleValue()), (int) O.getY().getDoubleValue() - 5, (int) (O.getX().getDoubleValue() + i * scaleX.getDoubleValue()), (int) O.getY().getDoubleValue() + 5);
+				if (count % 5 == 0 && Math.abs (i) >= 0.001)
+					g2d.drawString (String.valueOf ((float) i), (int) (O.getX().getDoubleValue() + i * scaleX.getDoubleValue()), (int) O.getY().getDoubleValue() + 15);
+
+				g2d.setPaint (Color.LIGHT_GRAY);
+				g2d.setStroke (new BasicStroke (.5f));
+				
+				// draw x grid line
+				g2d.drawLine ((int) (O.getX().getDoubleValue() + i * scaleX.getDoubleValue()), 0, (int) (O.getX().getDoubleValue() + i * scaleX.getDoubleValue()), getHeight());
+			}
+
+			count++;
+		}
+
+		count = 0;
+		for (double i = windowVert.getLowerBound().getDoubleValue(); i <= windowVert.getUpperBound().getDoubleValue(); i += 10 * step)
+		{
+			g2d.setFont (getFont().deriveFont (10f));
+			
+			if (i != 0)
+			{
+				g2d.setPaint (Color.BLACK);
+				g2d.setStroke (new BasicStroke (.75f));
+
+				// draw y axis scale
+				g2d.drawLine ((int) O.getX().getDoubleValue() - 5, (int) (O.getY().getDoubleValue() - i * scaleY.getDoubleValue()), (int) O.getX().getDoubleValue() + 5, (int) (O.getY().getDoubleValue() - i * scaleY.getDoubleValue()));
+				if (count % 5 == 0 && Math.abs (i) >= 0.001)
+					g2d.drawString (String.valueOf ((float) i), (int) O.getX().getDoubleValue() + 15, (int) (O.getY().getDoubleValue() - i * scaleY.getDoubleValue()));
+					
+				g2d.setPaint (Color.LIGHT_GRAY);
+				g2d.setStroke (new BasicStroke (.5f));
+				
+				// draw y grid line
+				g2d.drawLine (0, (int) (O.getY().getDoubleValue() - i * scaleY.getDoubleValue()), getWidth(), (int) (O.getY().getDoubleValue() - i * scaleY.getDoubleValue()));
+			}
+
+			count++;
+		}
+
+		g2d.setStroke (new BasicStroke (1.5f));
+		for (int i = 1; i < size; i++)
+		{
+			for (Function f : fnPoints.keySet())
+			{
+				try
+				{
+					Value v = (Value) fnPoints.get(f).keySet().toArray()[i], prev = (Value) fnPoints.get(f).keySet().toArray()[i - 1];
+	
+					if (prev != null)
+					{
+						g2d.setColor (fnColors.get (f));
+						g2d.drawLine (
+							(int) Math.round (O.getX().add(prev.multiply (scaleX)).getDoubleValue()),
+							(int) Math.round (O.getY().subtract(fnPoints.get(f).get(prev).multiply (scaleY)).getDoubleValue()),
+							(int) Math.round (O.getX().add(v.multiply (scaleX)).getDoubleValue()),
+							(int) Math.round (O.getY().subtract(fnPoints.get(f).get(v).multiply (scaleY)).getDoubleValue())
+						);
+					}
+				}
+				catch (IndexOutOfBoundsException iobe) {}
+			}
+		}
+	}
+
+	@Override
+	public void mouseDragged (MouseEvent e)
+	{
+		double distanceXScaled = e.getX() - start.getX().getDoubleValue(), distanceYScaled = e.getY() - start.getY().getDoubleValue();
+		O.setX (O.getX().add (new FloatValue (distanceXScaled)));
+		O.setY (O.getY().add (new FloatValue (distanceYScaled)));
+		repaint();
+		start = new Point (new FloatValue ((double) e.getX()), new FloatValue ((double) e.getY()));
+	}
+
+	@Override
+	public void mouseMoved (MouseEvent e) {}
+
+	@Override
+	public void mouseClicked (MouseEvent e) {}
+
+	@Override
+	public void mousePressed (MouseEvent e)
+	{
+		start = new Point (new FloatValue ((double) e.getX()), new FloatValue ((double) e.getY()));
+		oldO = new Point (O.getX(), O.getY());
+	}
+
+	@Override
+	public void mouseReleased (MouseEvent e)
+	{
+		double scaleX = (getWidth() - 20) / windowHoriz.length();
+		double scaleY = (getHeight() - 20) / windowVert.length();
+		double distanceXScaled = O.getX().subtract(oldO.getX()).getDoubleValue(), distanceYScaled = oldO.getY().subtract(O.getY()).getDoubleValue();
+		FloatValue distanceX = new FloatValue (distanceXScaled / scaleX), distanceY = new FloatValue (distanceYScaled / scaleY);
+		Range newX = windowHoriz.clone(), newY = windowVert.clone();
+		if (distanceX.compareTo (FractionValue.ZERO) != 0)
+		{
+			newX.setBounds (windowHoriz.getLowerBound().subtract (distanceX), windowHoriz.getUpperBound().subtract (distanceX));
+		}
+		
+		if (distanceY.compareTo (FractionValue.ZERO) != 0)
+		{
+			newY.setBounds (windowVert.getLowerBound().subtract (distanceY), windowVert.getUpperBound().subtract (distanceY));
+			windowVert.setBounds (newY.getLowerBound(), newY.getUpperBound());
+		}
+		refreshGraph (windowHoriz, windowVert, newX, null);
+		repaint();
+	}
+
+	@Override
+	public void mouseEntered (MouseEvent e) {}
+
+	@Override
+	public void mouseExited (MouseEvent e) {}
+
+	@Override
+	public void mouseWheelMoved (MouseWheelEvent e)
+	{}
 }
