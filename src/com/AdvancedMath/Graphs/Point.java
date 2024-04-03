@@ -73,8 +73,8 @@ public class Point implements Graphable
 
 		int quad = 0;
 
-		if (comps[0].compare (FractionValue.ZERO) == 1)
-			if (comps[1].compare (FractionValue.ZERO) == 1)
+		if (comps[0].compareTo (FractionValue.ZERO) == 1)
+			if (comps[1].compareTo (FractionValue.ZERO) == 1)
 				quad = 0;
 			else
 			{
@@ -86,7 +86,7 @@ public class Point implements Graphable
 				comps[1] = temp;
 			}
 		else
-			if (comps[1].compare (FractionValue.ZERO) == 1)
+			if (comps[1].compareTo (FractionValue.ZERO) == 1)
 			{
 				quad = 1;
 				comps[0].negate();

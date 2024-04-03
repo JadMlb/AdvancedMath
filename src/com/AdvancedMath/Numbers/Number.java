@@ -111,12 +111,12 @@ public class Number extends Point implements Cloneable
 		
 		// reduce angle to [-π, π]
 		FractionValue pi = new FractionValue (1, 1), twoPi = new FractionValue (2, 1);
-		while (piMultiFrac.compare (new FractionValue (-1, 1)) == -1)
+		while (piMultiFrac.compareTo (new FractionValue (-1, 1)) == -1)
 		{
 			piMultiFrac = (FractionValue) piMultiFrac.add (twoPi);
 		}
 		
-		while (piMultiFrac.compare (pi) == 1)
+		while (piMultiFrac.compareTo (pi) == 1)
 		{
 			piMultiFrac = (FractionValue) piMultiFrac.subtract (twoPi);
 		}
@@ -125,14 +125,14 @@ public class Number extends Point implements Cloneable
 						piOver2 = new FractionValue (1, 2);
 		
 		int quad = 0;
-		if (piMultiFrac.compare (zero) == -1)
+		if (piMultiFrac.compareTo (zero) == -1)
 			// less than -π/2
-			if (piMultiFrac.compare (piOver2.negateCopy()) == -1)
+			if (piMultiFrac.compareTo (piOver2.negateCopy()) == -1)
 				quad = 2;
 			else
 				quad = 3;
 		else
-			if (piMultiFrac.compare (piOver2) == 1)
+			if (piMultiFrac.compareTo (piOver2) == 1)
 				quad = 1;
 			else
 				quad = 0;
@@ -391,7 +391,7 @@ public class Number extends Point implements Cloneable
 	 */
 	public Number factorial ()
 	{
-		if (!isPureReal() || getX().compare (FractionValue.ZERO) == -1)
+		if (!isPureReal() || getX().compareTo (FractionValue.ZERO) == -1)
 			throw new IllegalArgumentException ("Factorial for imaginary numbers and negative numbers is not defined");
 
 		long fact = 1, val = Math.round (getX().getDoubleValue());
@@ -665,7 +665,7 @@ public class Number extends Point implements Cloneable
 			if (getY().equals (FractionValue.ZERO))
 				s = x;
 			else
-				s = x + (getY().compare (FractionValue.ZERO) == 1 ? " + " : " - ") + y;
+				s = x + (getY().compareTo (FractionValue.ZERO) == 1 ? " + " : " - ") + y;
 		
 		return s;
 	}

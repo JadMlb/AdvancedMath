@@ -101,7 +101,7 @@ public class Range implements Cloneable
 		if (v.equals (lower) || v.equals (upper))
 			throw new IllegalArgumentException ("New bound cannot be equal to existing bounds");
 		
-		if (v.compare (upper) == 1)
+		if (v.compareTo (upper) == 1)
 		{
 			swapLowerUpper();
 			this.upper = v;
@@ -126,7 +126,7 @@ public class Range implements Cloneable
 		if (v.equals (lower) || v.equals (upper))
 			throw new IllegalArgumentException ("New bound cannot be equal to existing bounds");
 		
-		if (v.compare (lower) == -1)
+		if (v.compareTo (lower) == -1)
 		{
 			swapLowerUpper();;
 			this.lower = v;
@@ -180,7 +180,7 @@ public class Range implements Cloneable
 	 */
 	public boolean in (Range r)
 	{
-		int lower = this.lower.compare (r.lower), upper = this.upper.compare (r.upper);
+		int lower = this.lower.compareTo (r.lower), upper = this.upper.compareTo (r.upper);
 		return ((lower == 1 || lower == 0 && this.includeLower && r.includeLower) && (upper == -1 || upper == 0 && this.includeUpper && r.includeUpper));
 	}
 
@@ -196,7 +196,7 @@ public class Range implements Cloneable
 		if (this.in (r) || r.in (this))
 			return true;
 		
-		int thisCmpR = this.lower.compare (r.lower);
+		int thisCmpR = this.lower.compareTo (r.lower);
 		if (thisCmpR < 0)
 			return this.contains (r.lower) && r.contains (this.upper);
 		return r.contains (this.lower) && this.contains (r.upper);
@@ -218,7 +218,7 @@ public class Range implements Cloneable
 		if (r.in (this))
 			return r.clone();
 
-		int thisCmpR = this.lower.compare (r.lower);
+		int thisCmpR = this.lower.compareTo (r.lower);
 		if (thisCmpR < 0)
 			return new Range (r.lower, r.includeLower, this.includeUpper, this.upper);
 		return new Range (this.lower, this.includeLower, r.includeUpper, r.upper);
@@ -234,7 +234,7 @@ public class Range implements Cloneable
 	 */
 	public boolean contains (Value v)
 	{
-		int lower = v.compare (this.lower), upper = v.compare (this.upper);
+		int lower = v.compareTo (this.lower), upper = v.compareTo (this.upper);
 		return ((lower == 1 || lower == 0 && this.includeLower) && (upper == -1 || upper == 0 && this.includeUpper));
 	}
 
@@ -312,7 +312,7 @@ public class Range implements Cloneable
 
 		Range lowerPart = new Range (0, 1), upperPart = new Range (0, 1);
 
-		if (this.lower.compare (r.lower) <= 0)
+		if (this.lower.compareTo (r.lower) <= 0)
 		{
 			lowerPart.lower = this.lower.clone();
 			lowerPart.includeLower = this.includeLower;
@@ -323,7 +323,7 @@ public class Range implements Cloneable
 			lowerPart.includeLower = this.includeLower;
 		}
 		
-		if (this.upper.compare (r.upper) >= 0)
+		if (this.upper.compareTo (r.upper) >= 0)
 		{
 			upperPart.upper = this.upper.clone();
 			upperPart.includeUpper = this.includeUpper;

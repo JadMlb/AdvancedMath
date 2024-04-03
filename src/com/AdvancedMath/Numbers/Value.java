@@ -2,7 +2,7 @@ package com.AdvancedMath.Numbers;
 
 import java.text.NumberFormat;
 
-public abstract class Value implements Cloneable
+public abstract class Value implements Cloneable, Comparable<Value>
 {
 	/**
 	 * Sets the value to the opposite of the current one. If the current value is positive, it becomes negative and vice versa.
@@ -42,6 +42,7 @@ public abstract class Value implements Cloneable
 	 * @param v
 	 * @return
 	 */
+	@Deprecated
 	public int compare (Value v)
 	{
 		if (this == v)
@@ -94,5 +95,18 @@ public abstract class Value implements Cloneable
 		// 		nb = nb.split("\\.")[0];
 
 		return nf.format (d);
+	}
+
+	@Override
+	public int compareTo (Value v)
+	{
+		if (this == v)
+			return 0;
+
+		if (this.getDoubleValue() > v.getDoubleValue())
+			return 1;
+		else if (this.getDoubleValue() < v.getDoubleValue())
+			return -1;
+		return 0;
 	}
 }

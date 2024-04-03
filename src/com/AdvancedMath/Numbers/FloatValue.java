@@ -62,9 +62,9 @@ public class FloatValue extends Value
 				return upper.reduceCopy();
 
 			FractionValue inter = new FractionValue (lower.getNumerator() + upper.getNumerator(), lower.getDenomenator() + upper.getDenomenator());
-			if (inter.compare (this) == 1)
+			if (inter.compareTo (this) == 1)
 				upper = inter;
-			else if (inter.compare (this) == -1)
+			else if (inter.compareTo (this) == -1)
 				lower = inter;
 			else
 				return inter.reduceCopy();
