@@ -1,2 +1,5 @@
 .*
-src/Main.java
+*.class
+.DS_Store
+*Main.java
+*App.java
