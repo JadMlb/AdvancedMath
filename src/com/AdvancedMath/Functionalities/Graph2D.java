@@ -512,5 +512,18 @@ class GraphArea extends JPanel implements MouseListener, MouseMotionListener, Mo
 
 	@Override
 	public void mouseWheelMoved (MouseWheelEvent e)
-	{}
+	{
+		double rotations = e.getPreciseWheelRotation();
+		if (step >= 1e-5 || rotations >= 0)
+		{
+			FloatValue expandValue = new FloatValue ((double) e.getScrollAmount() * rotations);
+			FloatValue scale = new FloatValue ((getWidth() - 20) / windowHoriz.length());
+			FloatValue expandValueX = (FloatValue) expandValue.divide (scale);
+			FloatValue expandValueY = (FloatValue) expandValue.divide (scale);
+			Range newX = new Range (windowHoriz.getLowerBound().add (expandValueX), windowHoriz.isLowerIncluded(), windowHoriz.isUpperIncluded(), windowHoriz.getUpperBound().subtract (expandValueX));
+			refreshGraph (windowHoriz, windowVert, newX, null);
+			windowVert.setBounds (windowVert.getLowerBound().add (expandValueY), windowVert.getUpperBound().subtract (expandValueY));
+			repaint();
+		}
+	}
 }
