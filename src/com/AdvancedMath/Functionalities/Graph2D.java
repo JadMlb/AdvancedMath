@@ -10,6 +10,7 @@ import java.awt.event.MouseListener;
 import java.awt.event.MouseMotionListener;
 import java.awt.event.MouseWheelEvent;
 import java.awt.event.MouseWheelListener;
+import java.text.DecimalFormat;
 import java.awt.event.MouseEvent;
 
 import java.util.HashMap;
@@ -71,7 +72,7 @@ public class Graph2D
 	/**
 	 * Constructs a graph with default values.
 	 * 
-	 * @see Graph2D#Graph2D2(String, Range, String[], double)
+	 * @see Graph2D#Graph2D(String, Range, String[], double)
 	 */
 	public Graph2D ()
 	{
@@ -83,7 +84,7 @@ public class Graph2D
 	 * 
 	 * @param title The title of the graph
 	 * 
-	 * @see Graph2D#Graph2D2(String, Range, String[], double)
+	 * @see Graph2D#Graph2D(String, Range, String[], double)
 	 */
 	public Graph2D (String title)
 	{
@@ -96,7 +97,7 @@ public class Graph2D
 	 * @param title The title of the graph
 	 * @param axesNames The labels of the axes
 	 * 
-	 * @see Graph2D#Graph2D2(String, Range, String[], double)
+	 * @see Graph2D#Graph2D(String, Range, String[], double)
 	 */
 	public Graph2D (String title, String[] axesNames)
 	{
@@ -178,6 +179,7 @@ public class Graph2D
 
 				NumberNode nb = (NumberNode) f.of (xMapping);
 				// if (vr.contains (nb.getValue().getX()))
+				if (nb.getValue().isPureReal())
 					fnPoints.get(f).put (new FloatValue (i), nb.getValue().getX());
 			}
 			catch (Exception e) {}
@@ -364,10 +366,7 @@ class GraphArea extends JPanel implements MouseListener, MouseMotionListener, Mo
 		if (this.O == null)
 			this.O = new Point (new FloatValue (getWidth() / 2.0), new FloatValue (getHeight() / 2.0));
 
-		int nbDivs = (int) (windowHoriz.getUpperBound().subtract(windowHoriz.getLowerBound()).getDoubleValue());
-		FloatValue scaleX = new FloatValue ((double) (getWidth() - 20) / nbDivs);
-		FloatValue scaleY = new FloatValue ((double) (getHeight() - 20) / nbDivs);
-
+		FloatValue scale = new FloatValue ((getWidth() - 20) / windowHoriz.length());
 		FontMetrics metrics = g.getFontMetrics();
 
 		// draw axes
@@ -383,53 +382,86 @@ class GraphArea extends JPanel implements MouseListener, MouseMotionListener, Mo
 		// put label for origin
 		g2d.drawString ("O", (int) O.getX().getDoubleValue() + 5, (int) O.getY().getDoubleValue() + 15);
 
-		// draw grid
+		DecimalFormat formatter = new DecimalFormat ("#.00");
+
+		// draw grids & scale
 		int count = 0;
-		for (double i = windowHoriz.getLowerBound().getDoubleValue(); i <= windowHoriz.getUpperBound().getDoubleValue(); i += 10 * step)
+		FloatValue nbDivs = (FloatValue) O.getX().divide (scale);
+		int start = 0;
+		double firstVal = 0;
+		
+		if (O.getX().compareTo (FractionValue.ZERO) <= 0)
+		{
+			int n = (int) Math.ceil (nbDivs.negateCopy().getDoubleValue());
+			start = (int) (O.getX().getDoubleValue() + n * scale.getDoubleValue());
+			firstVal = n;
+		}
+		else
+		{
+			int n = (int) Math.floor (nbDivs.getDoubleValue());
+			start = (int) (O.getX().getDoubleValue() - n * scale.getDoubleValue());
+			firstVal = -n;
+		}
+		
+		// draw x grid
+		for (int i = start; i <= getWidth() - 20; i = (int) Math.round (i + scale.getDoubleValue() / 2))
 		{
 			g2d.setFont (getFont().deriveFont (10f));
 			
-			if (i != 0)
-			{
-				g2d.setPaint (Color.BLACK);
-				g2d.setStroke (new BasicStroke (.75f));
+			g2d.setPaint (Color.BLACK);
+			g2d.setStroke (new BasicStroke (.75f));
 
-				// draw x axis scale
-				g2d.drawLine ((int) (O.getX().getDoubleValue() + i * scaleX.getDoubleValue()), (int) O.getY().getDoubleValue() - 5, (int) (O.getX().getDoubleValue() + i * scaleX.getDoubleValue()), (int) O.getY().getDoubleValue() + 5);
-				if (count % 5 == 0 && Math.abs (i) >= 0.001)
-					g2d.drawString (String.valueOf ((float) i), (int) (O.getX().getDoubleValue() + i * scaleX.getDoubleValue()), (int) O.getY().getDoubleValue() + 15);
+			// draw x axis scale
+			g2d.drawLine (i, (int) O.getY().getDoubleValue() - 5, i, (int) O.getY().getDoubleValue() + 5);
+			if (Math.abs (firstVal + count * .5) > .01)
+				g2d.drawString (formatter.format (firstVal + count * .5), i, (int) O.getY().getDoubleValue() + 15);
 
-				g2d.setPaint (Color.LIGHT_GRAY);
-				g2d.setStroke (new BasicStroke (.5f));
-				
-				// draw x grid line
-				g2d.drawLine ((int) (O.getX().getDoubleValue() + i * scaleX.getDoubleValue()), 0, (int) (O.getX().getDoubleValue() + i * scaleX.getDoubleValue()), getHeight());
-			}
+			g2d.setPaint (Color.LIGHT_GRAY);
+			g2d.setStroke (new BasicStroke (.5f));
+			
+			// draw x grid line
+			g2d.drawLine (i, 0, i, getHeight());
 
 			count++;
 		}
 
+		// y grid
 		count = 0;
-		for (double i = windowVert.getLowerBound().getDoubleValue(); i <= windowVert.getUpperBound().getDoubleValue(); i += 10 * step)
+		count = 0;
+		nbDivs = (FloatValue) O.getY().divide (scale);
+		start = 0;
+		firstVal = 0;
+		
+		if (O.getY().compareTo (FractionValue.ZERO) <= 0)
+		{
+			int n = (int) Math.ceil (nbDivs.negateCopy().getDoubleValue());
+			start = (int) (O.getY().getDoubleValue() + n * scale.getDoubleValue());
+			firstVal = n;
+		}
+		else
+		{
+			int n = (int) Math.floor (nbDivs.getDoubleValue());
+			start = (int) (O.getY().getDoubleValue() - n * scale.getDoubleValue());
+			firstVal = -n;
+		}
+
+		for (int i = start; i <= getWidth() - 20; i = (int) Math.round (i + scale.getDoubleValue() / 2))
 		{
 			g2d.setFont (getFont().deriveFont (10f));
 			
-			if (i != 0)
-			{
-				g2d.setPaint (Color.BLACK);
-				g2d.setStroke (new BasicStroke (.75f));
+			g2d.setPaint (Color.BLACK);
+			g2d.setStroke (new BasicStroke (.75f));
 
-				// draw y axis scale
-				g2d.drawLine ((int) O.getX().getDoubleValue() - 5, (int) (O.getY().getDoubleValue() - i * scaleY.getDoubleValue()), (int) O.getX().getDoubleValue() + 5, (int) (O.getY().getDoubleValue() - i * scaleY.getDoubleValue()));
-				if (count % 5 == 0 && Math.abs (i) >= 0.001)
-					g2d.drawString (String.valueOf ((float) i), (int) O.getX().getDoubleValue() + 15, (int) (O.getY().getDoubleValue() - i * scaleY.getDoubleValue()));
-					
-				g2d.setPaint (Color.LIGHT_GRAY);
-				g2d.setStroke (new BasicStroke (.5f));
+			// draw y axis scale
+			g2d.drawLine ((int) O.getX().getDoubleValue() - 5, i, (int) O.getX().getDoubleValue() + 5, i);
+			if (Math.abs (firstVal + count * .5) > .01)
+				g2d.drawString (formatter.format (- (firstVal + count * .5)), (int) O.getX().getDoubleValue() + 15, i);
 				
-				// draw y grid line
-				g2d.drawLine (0, (int) (O.getY().getDoubleValue() - i * scaleY.getDoubleValue()), getWidth(), (int) (O.getY().getDoubleValue() - i * scaleY.getDoubleValue()));
-			}
+			g2d.setPaint (Color.LIGHT_GRAY);
+			g2d.setStroke (new BasicStroke (.5f));
+			
+			// draw y grid line
+			g2d.drawLine (0, i, getWidth(), i);
 
 			count++;
 		}
@@ -447,10 +479,10 @@ class GraphArea extends JPanel implements MouseListener, MouseMotionListener, Mo
 					{
 						g2d.setColor (fnColors.get (f));
 						g2d.drawLine (
-							(int) Math.round (O.getX().add(prev.multiply (scaleX)).getDoubleValue()),
-							(int) Math.round (O.getY().subtract(fnPoints.get(f).get(prev).multiply (scaleY)).getDoubleValue()),
-							(int) Math.round (O.getX().add(v.multiply (scaleX)).getDoubleValue()),
-							(int) Math.round (O.getY().subtract(fnPoints.get(f).get(v).multiply (scaleY)).getDoubleValue())
+							(int) Math.round (O.getX().add(prev.multiply (scale)).getDoubleValue()),
+							(int) Math.round (O.getY().subtract(fnPoints.get(f).get(prev).multiply (scale)).getDoubleValue()),
+							(int) Math.round (O.getX().add(v.multiply (scale)).getDoubleValue()),
+							(int) Math.round (O.getY().subtract(fnPoints.get(f).get(v).multiply (scale)).getDoubleValue())
 						);
 					}
 				}
@@ -485,10 +517,9 @@ class GraphArea extends JPanel implements MouseListener, MouseMotionListener, Mo
 	@Override
 	public void mouseReleased (MouseEvent e)
 	{
-		double scaleX = (getWidth() - 20) / windowHoriz.length();
-		double scaleY = (getHeight() - 20) / windowVert.length();
+		double scale = (getWidth() - 20) / windowHoriz.length();
 		double distanceXScaled = O.getX().subtract(oldO.getX()).getDoubleValue(), distanceYScaled = oldO.getY().subtract(O.getY()).getDoubleValue();
-		FloatValue distanceX = new FloatValue (distanceXScaled / scaleX), distanceY = new FloatValue (distanceYScaled / scaleY);
+		FloatValue distanceX = new FloatValue (distanceXScaled / scale), distanceY = new FloatValue (distanceYScaled / scale);
 		Range newX = windowHoriz.clone(), newY = windowVert.clone();
 		if (distanceX.compareTo (FractionValue.ZERO) != 0)
 		{
