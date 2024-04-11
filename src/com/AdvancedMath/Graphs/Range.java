@@ -8,6 +8,9 @@ import com.AdvancedMath.Numbers.Value;
  */
 public class Range implements Cloneable
 {
+	/**
+	 * The {@code Range} that represents all real numbers
+	 */
 	public static final Range R = new Range (Double.NEGATIVE_INFINITY, false, false, Double.POSITIVE_INFINITY);
 	
 	private Value lower, upper;
