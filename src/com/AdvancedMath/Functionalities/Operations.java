@@ -1,6 +1,13 @@
 package com.AdvancedMath.Functionalities;
 
+import java.util.ArrayList;
+import java.util.HashSet;
+
+import com.AdvancedMath.EqTree.Node;
+import com.AdvancedMath.EqTree.OperatorNode;
+import com.AdvancedMath.Graphs.Range;
 import com.AdvancedMath.Numbers.ConstantValue;
+import com.AdvancedMath.Numbers.FloatValue;
 import com.AdvancedMath.Numbers.FractionValue;
 import com.AdvancedMath.Numbers.Matrix;
 import com.AdvancedMath.Numbers.Number;
@@ -112,5 +119,29 @@ public class Operations
 				negativeThirdF.subtract(half.multiply (b)).subtract (halfSqrt3iA)
 			}
 		);
+	}
+
+	public static Number solveEquality (String variable, Node left, Node right)
+	{
+		if (left == null || right == null)
+			throw new IllegalArgumentException ("Cannot evaluate equivalence with one argument being null");
+
+		if (left == right)
+			return Number.real (new FloatValue (Double.POSITIVE_INFINITY));
+
+		Node finalLeft = left, finalRight = right;
+
+		if (left instanceof OperatorNode oL)
+			finalLeft = OperatorNode.simplify (oL);
+		
+		if (right instanceof OperatorNode oR)
+			finalRight = OperatorNode.simplify (oR);
+
+		if (finalLeft.equals (finalRight))
+		{
+			
+		}
+
+		return null;
 	}
 }
