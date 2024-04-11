@@ -1,12 +1,52 @@
 package com.AdvancedMath.EqTree;
 
+import com.AdvancedMath.Numbers.ConstantValue;
+import com.AdvancedMath.Numbers.FloatValue;
+import com.AdvancedMath.Numbers.FractionValue;
+import com.AdvancedMath.Numbers.Value;
+
 public class VariableNode extends Node 
 {
 	private String name;
+	private Value multiplier, power;
 
+	/**
+	 * Creates an instance of {@code VariableNode} with the specified parameters under the format: multiplier * name ^ power
+	 * 
+	 * @param multiplier The multiplier specifying how many of the variables there are. If null, the value defaults to a {@code FloatValue} with a value of 1
+	 * @param name The name / label of the variable
+	 * @param power The power the variable is raised to. If null, the value defaults to a {@code FloatValue} with a value of 1
+	 * 
+	 * @throws IllegalArgumentException if given name is null
+	 */
+	public VariableNode (Value multiplier, String name, Value power)
+	{
+		if (name == null)
+			throw new IllegalArgumentException ("VariableNode variable name cannot be null");
+		
+		if (multiplier == null)
+			this.multiplier = new FloatValue (1.);
+		else
+			this.multiplier = multiplier;
+		this.name = name;
+		
+		if (power == null)
+			this.power = new FloatValue (1.);
+		else
+			this.power = power;
+	}
+
+	/**
+	 * Creates an instance of {@code VariableNode} with the specified parameters under the format: name
+	 * <p>Returns a {@code new VariableNode (null, name, null)}</p>
+	 * 
+	 * @param name The name / label of the variable
+	 * @throws IllegalArgumentException if given name is null
+	 * @see #VariableNode(Value, String, Value)
+	 */
 	public VariableNode (String name)
 	{
-		this.name = name;
+		this (null, name, null);
 	}
 
 	public String getName ()
@@ -19,15 +59,63 @@ public class VariableNode extends Node
 		this.name = name;
 	}
 
+	public Value getMultiplier ()
+	{
+		return multiplier;
+	}
+
+	public void setMultiplier (Value multiplier)
+	{
+		this.multiplier = multiplier;
+	}
+	
+	public Value getPower ()
+	{
+		return power;
+	}
+
+	public void setPower (Value power)
+	{
+		this.power = power;
+	}
+
+	/**
+	 * Evaluates whether two instances of {@code VariableNode} have the same variable name in order to operate on them.
+	 * 
+	 * @param v The other instance of {@code VariableNode} to check for compatibility
+	 * @return {@code true} if both instances have the same variable name, {@code false} otherwise
+	 */
+	public boolean isCompatibleWith (VariableNode v)
+	{
+		return this.name.equals (v.name);
+	}
+
 	@Override
 	public String toString () 
 	{
-		return name;
+		String s = "";
+		
+		if (!multiplier.equals (FractionValue.ONE))
+		{
+			if (multiplier.equals (FractionValue.ONE.negateCopy()))
+				s += "-";
+			s += multiplier;
+		}
+
+		if (multiplier instanceof ConstantValue)
+			s += "*";
+
+		s += name;
+
+		if (!power.equals (FractionValue.ONE))
+			s += "^" + power;
+
+		return s;
 	}
 	
 	/**
 	 * Checks if the given argument is a declared variable
-	 * @return {@code true} if {@code o} is this instance, if {@code o} is a {@code String} or a {@code VariableNode} of the same value as the name of this variable
+	 * @return {@code true} if {@code o} is this instance or a {@code VariableNode} with the same values of name, multiplier and power of this variable
 	 */
 	@Override
 	public boolean equals (Object o)
@@ -35,9 +123,7 @@ public class VariableNode extends Node
 		if (this == o)
 			return true;
 		if (o instanceof VariableNode n)
-			return name.equals (n.getName());
-		if (o instanceof String s)
-			return name.equals (s);
+			return multiplier.equals (n.multiplier) && name.equals (n.name) && power.equals (n.power);
 		return false;
 	}
 }
