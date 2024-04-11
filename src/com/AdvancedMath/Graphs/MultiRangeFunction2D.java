@@ -185,6 +185,10 @@ public class MultiRangeFunction2D extends Function
 		return new NumberNode (Number.valueOf (tree, x));
 	}
 
+	@Override
+	protected void calcDomain ()
+	{}
+
 	/**
 	 * Returns the first order derivative of this {@code Function}
 	 * 

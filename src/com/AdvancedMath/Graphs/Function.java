@@ -18,6 +18,7 @@ public abstract class Function
 {
 	private HashSet<String> variables;
 	private String name;
+	protected ArrayList<Range> domain;
 
 	/**
 	 * Creates a {@code Function} name(variables) = expression
@@ -72,6 +73,75 @@ public abstract class Function
 	public void setName (String name)
 	{
 		this.name = name;
+	}
+
+	/**
+	 * Gets the union of the ranges on which the function is defined
+	 * 
+	 * @return Set of {@code Range} that produce a valid output of the function
+	 */
+	public ArrayList<Range> getDomainOfDefinition ()
+	{
+		return domain;
+	}
+
+	// calculate domain of definition
+	protected abstract void calcDomain ();
+	
+	protected ArrayList<Range> calcDomain (Node root)
+	{
+		if (root == null)
+			return null;
+
+		ArrayList<Range> ranges = new ArrayList<>();
+
+		if (root instanceof OperatorNode o)
+		{
+			switch (o.getOperator())
+			{
+				case ADD: case SUB: case MUL:
+				case EXP:
+				case ABS:
+				case SIN: case COS:
+				case SINH: case COSH: case TANH:
+				case ASH:
+					ranges.add (Range.R);
+					break;
+				case DIV: 
+					ranges.add (Range.R);
+					break;
+				case POW: // for even roots
+					ranges.add (Range.R);
+					break;
+				case LN:
+					ranges.add (Range.gt (FractionValue.ZERO));
+					break;
+				case TAN: // FIXME: repetive values, how to represent that: R - {(2k+1)pi/2}
+					ranges.add (Range.R);
+					break;
+				case ASIN: 
+					ranges.add (Range.R);
+					break;
+				case ACOS: 
+					ranges.add (Range.R);
+					break;
+				case ATAN:
+					ranges.add (Range.R);
+					break;
+				case ACH:
+				ranges.add (Range.gt (FractionValue.ZERO));
+					break;
+				case ATH:
+					ranges.add (Range.R);
+					break;
+				default:
+					return null;
+			}
+		}
+		else
+			ranges.add (Range.R);
+
+		return ranges;
 	}
 
 	/**
