@@ -6,6 +6,7 @@ import java.util.Stack;
 import java.util.stream.Collectors;
 
 import com.AdvancedMath.Functionalities.Operators;
+import com.AdvancedMath.Numbers.FractionValue;
 import com.AdvancedMath.Numbers.Number;
 
 /**
@@ -325,7 +326,7 @@ public abstract class Node
 	private static void reduce (Stack<Node> nodes, Stack<Operators> ops, boolean iFound)
 	{
 		Operators oper = ops.pop();
-		Node left = null, right = null;
+		Node left = null, right = null, toPush = null;
 		
 		switch (oper.nbParams())
 		{
@@ -345,16 +346,87 @@ public abstract class Node
 			case 2:
 				right = nodes.pop();
 				left = nodes.pop();
-				
-				// if (oper == Operators.ADD && iFound)
-				// {
-				// 	nodes.push (new NumberNode (Number.valueOf (new OperatorNode (oper, right, left, iFound))));
-				// 	iFound = false;
-				// 	return;
-				// }
+
+				switch (oper)
+				{
+					case ADD:
+						if (left instanceof VariableNode l && right instanceof VariableNode r && l.isCompatibleWith (r))
+						{
+							l.setMultiplier (l.getMultiplier().add (r.getMultiplier()));
+							toPush = l;
+						}
+						break;
+
+					case SUB:
+						if (left instanceof VariableNode l && right instanceof VariableNode r && l.isCompatibleWith (r))
+						{
+							if (l.getMultiplier().equals (r.getMultiplier()))
+								toPush = new NumberNode (Number.ZERO);
+							else
+							{
+								l.setMultiplier (l.getMultiplier().subtract (r.getMultiplier()));
+								toPush = l;
+							}
+						}
+						break;
+
+					case MUL:
+						if (left instanceof VariableNode v)
+						{
+							if (right instanceof NumberNode n)
+							{
+								v.setMultiplier (v.getMultiplier().multiply (n.getValue()));
+								toPush = v;
+							}
+							else if (right instanceof VariableNode r && v.isCompatibleWith (r))
+							{
+								v.setPower (v.getPower().add (r.getPower()));
+								toPush = v;
+							}
+						}
+						else if (right instanceof VariableNode v)
+						{
+							if (left instanceof NumberNode n)
+							{
+								v.setMultiplier (v.getMultiplier().multiply (n.getValue()));
+								toPush = v;
+							}
+							else if (left instanceof VariableNode r && v.isCompatibleWith (r))
+							{
+								v.setPower (v.getPower().add (r.getPower()));
+								toPush = v;
+							}
+						}
+						break;
+					
+					case DIV:
+						if (left instanceof NumberNode n && n.getValue().equals (Number.ZERO))
+							toPush = new NumberNode (Number.ZERO);
+						else if (right instanceof NumberNode n && n.getValue().equals (Number.ZERO))
+							toPush = new NumberNode (Number.real (Double.POSITIVE_INFINITY)); // TODO: check if left side is positive or negative to set the correct sign of infinity
+						else if (left.equals (right))
+							toPush = new NumberNode (Number.ONE);
+						else if (left instanceof VariableNode l && right instanceof VariableNode r && l.isCompatibleWith (r))
+						{
+							if (l.getPower().compareTo (r.getPower()) == 0)
+								toPush = new NumberNode (l.getMultiplier().divide (r.getMultiplier()));
+							else
+							{
+								l.setMultiplier (l.getMultiplier().divide (r.getMultiplier()));
+								l.setPower (l.getPower().subtract (r.getPower()));
+							}
+						}
+						break;
+							
+					default:
+				}
 				break;
 		}
-		nodes.push (new OperatorNode (oper, left, right));
+
+		if (toPush != null)
+			nodes.push (toPush);
+		else
+			nodes.push (new OperatorNode (oper, left, right));
 	}
 
 	private static boolean isNumber (String s)
