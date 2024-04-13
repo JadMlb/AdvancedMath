@@ -1,31 +1,32 @@
 package com.AdvancedMath.EqTree;
 
-import com.AdvancedMath.Numbers.ConstantValue;
 import com.AdvancedMath.Numbers.FloatValue;
 import com.AdvancedMath.Numbers.FractionValue;
+import com.AdvancedMath.Numbers.Number;
 import com.AdvancedMath.Numbers.Value;
 
 public class VariableNode extends Node 
 {
 	private String name;
-	private Value multiplier, power;
+	private Number multiplier;
+	private Value power;
 
 	/**
 	 * Creates an instance of {@code VariableNode} with the specified parameters under the format: multiplier * name ^ power
 	 * 
-	 * @param multiplier The multiplier specifying how many of the variables there are. If null, the value defaults to a {@code FloatValue} with a value of 1
+	 * @param multiplier The multiplier specifying how many of the variables there are. If null, the value defaults to a {@code Number} with a value of 1
 	 * @param name The name / label of the variable
 	 * @param power The power the variable is raised to. If null, the value defaults to a {@code FloatValue} with a value of 1
 	 * 
 	 * @throws IllegalArgumentException if given name is null
 	 */
-	public VariableNode (Value multiplier, String name, Value power)
+	public VariableNode (Number multiplier, String name, Value power)
 	{
 		if (name == null)
 			throw new IllegalArgumentException ("VariableNode variable name cannot be null");
 		
 		if (multiplier == null)
-			this.multiplier = new FloatValue (1.);
+			this.multiplier = Number.ONE;
 		else
 			this.multiplier = multiplier;
 		this.name = name;
@@ -42,7 +43,7 @@ public class VariableNode extends Node
 	 * 
 	 * @param name The name / label of the variable
 	 * @throws IllegalArgumentException if given name is null
-	 * @see #VariableNode(Value, String, Value)
+	 * @see #VariableNode(Number, String, Value)
 	 */
 	public VariableNode (String name)
 	{
@@ -59,12 +60,12 @@ public class VariableNode extends Node
 		this.name = name;
 	}
 
-	public Value getMultiplier ()
+	public Number getMultiplier ()
 	{
 		return multiplier;
 	}
 
-	public void setMultiplier (Value multiplier)
+	public void setMultiplier (Number multiplier)
 	{
 		this.multiplier = multiplier;
 	}
@@ -94,16 +95,21 @@ public class VariableNode extends Node
 	public String toString () 
 	{
 		String s = "";
+		boolean needsBrackets = !multiplier.isPureImaginary() && !multiplier.isPureReal();
 		
-		if (!multiplier.equals (FractionValue.ONE))
+		if (needsBrackets)
+			s += "(";
+
+		if (!multiplier.equals (Number.ONE))
 		{
-			if (multiplier.equals (FractionValue.ONE.negateCopy()))
+			if (multiplier.equals (Number.real (-1.)))
 				s += "-";
-			s += multiplier;
+			else
+				s += multiplier;
 		}
 
-		if (multiplier instanceof ConstantValue)
-			s += "*";
+		if (needsBrackets)
+			s += ")";
 
 		s += name;
 
