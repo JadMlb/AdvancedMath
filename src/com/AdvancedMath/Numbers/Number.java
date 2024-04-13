@@ -652,20 +652,26 @@ public class Number extends Point implements Cloneable
 		if (!isValid())
 			return "NaN";
 
-		String s = "",
-				x = getX().equals (FractionValue.ONE) ? FractionValue.ONE.toString() : getX().toString(),
-				y = getY().equals (FractionValue.ONE) ? "i" : getY().toString().replaceFirst ("-", "") + "*i";
+		String s = "", x = getX().toString();
 		
 		if (getX().equals (FractionValue.ZERO))
 			if (getY().equals (FractionValue.ZERO))
 				s = FractionValue.ZERO.toString();
-			else 
-				s = y;
+			else if (getY().equals (FractionValue.ONE))
+				s = "i";
+			else if (getY().equals (FractionValue.ONE.negateCopy()))
+				s = "-i";
+			else
+				s = getX().toString() + "i";
 		else
 			if (getY().equals (FractionValue.ZERO))
 				s = x;
+			else if (getY().equals (FractionValue.ONE))
+				s = x + " + i";
+			else if (getY().equals (FractionValue.ONE.negateCopy()))
+				s = x + " - i";
 			else
-				s = x + (getY().compareTo (FractionValue.ZERO) == 1 ? " + " : " - ") + y;
+				s = x + (getY().compareTo (FractionValue.ZERO) == 1 ? " + " : " - ") + getY().toString().replaceFirst ("-", "") + "i";
 		
 		return s;
 	}
