@@ -417,6 +417,14 @@ public abstract class Node
 							}
 						}
 						break;
+
+					case POW:
+						if (left instanceof VariableNode l && right instanceof NumberNode r && r.getValue().isPureReal())
+						{
+							l.setPower (l.getPower().multiply (r.getValue().getX()));
+							toPush = l;
+						}
+						break;
 							
 					default:
 				}
