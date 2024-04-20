@@ -6,7 +6,6 @@ import java.util.Stack;
 import java.util.stream.Collectors;
 
 import com.AdvancedMath.Functionalities.Operators;
-import com.AdvancedMath.Numbers.FractionValue;
 import com.AdvancedMath.Numbers.Number;
 
 /**
@@ -82,7 +81,7 @@ public abstract class Node
 				.collect (Collectors.toList())
 		);
 		
-		ArrayList<Object> analysedInput = analyseInput (input, opsSt);
+		ArrayList<Object> analysedInput = analyseInput ("(" + input + ")", opsSt);
 		
 		return toTree (analysedInput);
 	}
@@ -333,12 +332,6 @@ public abstract class Node
 			case 1:
 				if (oper == Operators.FAC/*  || oper == Operators.PER */)
 					left = nodes.pop();
-				// else if (oper == Operators.EXP && iFound)
-				// {
-				// 	nodes.push (new NumberNode (Number.valueOf (new OperatorNode (oper, null, nodes.pop(), iFound))));
-				// 	iFound = false;
-				// 	return;
-				// }
 				else
 					right = nodes.pop();
 				break;
