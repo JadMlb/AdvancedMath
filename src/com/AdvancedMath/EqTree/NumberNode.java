@@ -54,6 +54,16 @@ public class NumberNode extends Node
 		this.number = value;
 	}
 
+	/**
+	 * @return a deep copy of the NumberNode
+	 * 
+	 */
+	@Override
+	public Node simplify ()
+	{
+		return new NumberNode (number.clone());
+	}
+
 	@Override
 	public String toString () 
 	{

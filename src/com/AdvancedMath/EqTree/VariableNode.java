@@ -81,14 +81,23 @@ public class VariableNode extends Node
 	}
 
 	/**
-	 * Evaluates whether two instances of {@code VariableNode} have the same variable name in order to operate on them.
+	 * @return a deep copy of the VariableNode
+	 */
+	@Override
+	public Node simplify ()
+	{
+		return new VariableNode (multiplier.clone(), name, power.clone());
+	}
+
+	/**
+	 * Evaluates whether two instances of {@code VariableNode} have the same variable name and degree in order to operate on them.
 	 * 
 	 * @param v The other instance of {@code VariableNode} to check for compatibility
 	 * @return {@code true} if both instances have the same variable name, {@code false} otherwise
 	 */
 	public boolean isCompatibleWith (VariableNode v)
 	{
-		return this.name.equals (v.name);
+		return this.name.equals (v.name) && this.power.equals (v.power);
 	}
 
 	@Override
