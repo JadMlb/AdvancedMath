@@ -66,7 +66,7 @@ public abstract class Node implements Simplifiable
 
 	/**
 	 * Transforms a {@code String} equation to a binary tree of {@code Node}s
-	 * <p>e.g. (x+3) * 5y will be turned into its corresponding tree
+	 * <p>e.g. (x+3) * 5y will be turned into its corresponding tree as simplified as possible
 	 * 
 	 * @param input {@code String} representing the equation
 	 * @return A parsable binary tree of {@code Node}s
@@ -81,19 +81,19 @@ public abstract class Node implements Simplifiable
 				.collect (Collectors.toList())
 		);
 		
-		ArrayList<Object> analysedInput = analyseInput ("(" + input + ")", opsSt);
+		ArrayList<Object> tokens = tokenize ("(" + input + ")", opsSt);
 		
-		return toTree (analysedInput);
+		return toTree (tokens);
 	}
 	
 	/**
 	 * Transform analyzed input to tree of nodes
 	 * 
-	 * @param analysedInput {@code ArrayList} of tokens
+	 * @param tokens {@code ArrayList} of tokens
 	 * @return {@code Node} representing the tree of the equation
-	 * @see OperatorNode#analyseInput(String, ArrayList)
+	 * @see OperatorNode#tokenize(String, ArrayList)
 	 */
-	private static Node toTree (ArrayList<Object> analysedInput)
+	private static Node toTree (ArrayList<Object> tokens)
 	{
 		/* 
 			is i ? =>
@@ -127,15 +127,15 @@ public abstract class Node implements Simplifiable
 		Stack<Node> nodes = new Stack<>();
 		Stack<Operators> ops = new Stack<>();
 
-		for (int i = 0; i < analysedInput.size(); i++)
+		for (int i = 0; i < tokens.size(); i++)
 		{
-			Object o = analysedInput.get (i);
+			Object o = tokens.get (i);
 			if (o instanceof Operators op)
 			{
 				switch (op)
 				{
 					case OPR:
-						if (i > 0 && requiresMultiplication (analysedInput.get (i - 1)))
+						if (i > 0 && requiresMultiplication (tokens.get (i - 1)))
 							ops.push (Operators.MUL);
 						ops.push (Operators.OPR);
 						break;
@@ -157,7 +157,7 @@ public abstract class Node implements Simplifiable
 							while (!ops.empty() && ops.peek() != Operators.OPR && ops.peek().pri() >= op.pri())
 								reduce (nodes, ops, iFound);
 							
-							if (op.pri() == 5 && i > 0 && requiresMultiplication (analysedInput.get (i - 1)))
+							if (op.pri() == 5 && i > 0 && requiresMultiplication (tokens.get (i - 1)))
 								ops.push (Operators.MUL);
 
 							ops.push (op);
@@ -166,7 +166,7 @@ public abstract class Node implements Simplifiable
 			}
 			else if (o instanceof String s) // number or variable
 			{
-				if (i > 0 && requiresMultiplication (analysedInput.get (i - 1)))
+				if (i > 0 && requiresMultiplication (tokens.get (i - 1)))
 					ops.push (Operators.MUL);
 				
 				if (isNumber (s))
@@ -204,7 +204,7 @@ public abstract class Node implements Simplifiable
 	 * @param opsSt {@code ArrayList} of all operators in form of string
 	 * @return {@code ArrayList} of the separated tokens
 	 */
-	private static ArrayList<Object> analyseInput (String input, ArrayList<String> opsSt)
+	private static ArrayList<Object> tokenize (String input, ArrayList<String> opsSt)
 	{
 		ArrayList<Object> analysedInput = new ArrayList<>();
 		String nb = null;
@@ -424,10 +424,92 @@ public abstract class Node implements Simplifiable
 				break;
 		}
 
+		if (left instanceof OperatorNode o && right instanceof Operable r && trySimplify (o, oper, r))
+			toPush = left;
+
 		if (toPush != null)
 			nodes.push (toPush);
 		else
 			nodes.push (new OperatorNode (oper, left, right));
+	}
+
+	/**
+	 * Simplifies the given subtree by trying to combine like terms, e.g. 3x^2 + 5 - 20 + 4x^2 will result in 7x^2 - 15
+	 * 
+	 * @param subtree
+	 * @param op
+	 * @param n
+	 * @return true if simplification happened, false otherwise
+	 */
+	private static boolean trySimplify (OperatorNode subtree, Operators op, Operable n)
+	{
+		Stack<Node> nodes = new Stack<>();
+		Node cur = subtree;
+
+		while (!nodes.empty() || cur != null)
+			if (cur != null)
+			{
+				nodes.push (cur);
+				cur = cur.left;
+			}
+			else
+			{
+				cur = nodes.pop();
+				
+				if (cur instanceof OperatorNode on && on.getOperator().pri() == op.pri())
+				{
+					if (cur.left instanceof Operable l)
+					{
+						try
+						{
+							cur.left = (Node) switch (op) {
+								case ADD -> l.add (n);
+								case SUB -> l.subtract (n);
+								case MUL -> l.multiply (n);
+								case DIV -> l.divide (n);
+								case POW -> l.pow (n);
+								default -> l;
+							};
+							return true;
+						}
+						catch (Exception e) {}
+					}
+
+					if (cur.right instanceof Operable r)
+					{
+						try
+						{
+							Operable right = r;
+							if (on.getOperator() == Operators.SUB)
+								right = r.negateCopy();
+							
+							Operable res = switch (op) {
+								case ADD -> right.add (n);
+								case SUB -> right.subtract (n);
+								case MUL -> right.multiply (n);
+								case DIV -> right.divide (n);
+								case POW -> right.pow (n);
+								default -> r;
+							};
+							
+							if (res.sgn() == -1)
+							{
+								res.negate();
+								on.setOperator (on.getOperator() == Operators.ADD ? Operators.SUB : Operators.ADD);
+							}
+
+							cur.right = (Node) res;
+
+							return true;
+						}
+						catch (Exception e) {}
+					}
+				}
+				
+				cur = cur.right;
+			}
+		
+		return false;
 	}
 
 	private static boolean isNumber (String s)
