@@ -1,5 +1,6 @@
 package com.AdvancedMath.EqTree;
 
+import com.AdvancedMath.Numbers.FractionValue;
 import com.AdvancedMath.Numbers.Number;
 
 /**
@@ -62,6 +63,12 @@ public class NumberNode extends Node implements Operable
 	public Node simplify ()
 	{
 		return new NumberNode (number.clone());
+	}
+
+	@Override
+	public int sgn ()
+	{
+		return number.getX().compareTo (FractionValue.ZERO);
 	}
 
 	@Override

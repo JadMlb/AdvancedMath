@@ -101,6 +101,12 @@ public class VariableNode extends Node implements Operable
 	}
 
 	@Override
+	public int sgn ()
+	{
+		return multiplier.getX().compareTo (FractionValue.ZERO);
+	}
+
+	@Override
 	public void negate ()
 	{
 		this.multiplier = this.multiplier.negate();

@@ -3,6 +3,13 @@ package com.AdvancedMath.EqTree;
 public interface Operable
 {
 	/**
+	 * Returns the sign of the real part of the wrapped Number inside the Operable
+	 * 
+	 * @return -1 if the Operable is negative, 0 if Operable is 0 and 1 otherwise
+	 */
+	public int sgn ();
+	
+	/**
 	 * Negates the value of the current object in-place
 	 * 
 	 */
