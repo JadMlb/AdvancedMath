@@ -446,6 +446,7 @@ public abstract class Node implements Simplifiable
 		Stack<Node> nodes = new Stack<>();
 		Node cur = subtree;
 
+		// in-order, iterative tree traversal
 		while (!nodes.empty() || cur != null)
 			if (cur != null)
 			{
@@ -456,6 +457,8 @@ public abstract class Node implements Simplifiable
 			{
 				cur = nodes.pop();
 				
+				// operate
+				// if simplification happened no need to continue
 				if (cur instanceof OperatorNode on && on.getOperator().pri() == op.pri())
 				{
 					if (cur.left instanceof Operable l)
@@ -479,6 +482,7 @@ public abstract class Node implements Simplifiable
 					{
 						try
 						{
+							// handle the case where the operator is "-" => need to negate the value of the right child before operating on it
 							Operable right = r;
 							if (on.getOperator() == Operators.SUB)
 								right = r.negateCopy();
@@ -492,6 +496,7 @@ public abstract class Node implements Simplifiable
 								default -> r;
 							};
 							
+							// remove redundant resulting sign when + or - is operator and value is < 0
 							if (res.sgn() == -1)
 							{
 								res.negate();
