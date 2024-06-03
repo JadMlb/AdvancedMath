@@ -5,7 +5,7 @@ import com.AdvancedMath.Numbers.FractionValue;
 import com.AdvancedMath.Numbers.Number;
 import com.AdvancedMath.Numbers.Value;
 
-public class VariableNode extends Node 
+public class VariableNode extends Node implements Operable
 {
 	private String name;
 	private Number multiplier;
@@ -98,6 +98,87 @@ public class VariableNode extends Node
 	public boolean isCompatibleWith (VariableNode v)
 	{
 		return this.name.equals (v.name) && this.power.equals (v.power);
+	}
+
+	@Override
+	public void negate ()
+	{
+		this.multiplier = this.multiplier.negate();
+	}
+
+	@Override
+	public Operable negateCopy ()
+	{
+		return new VariableNode (multiplier.negate(), name, power.clone());
+	}
+
+	@Override
+	public Operable add (Operable v) throws IllegalArgumentException
+	{
+		if (v instanceof VariableNode var && isCompatibleWith (var))
+			return new VariableNode (multiplier.add (var.multiplier), name, power.clone());
+		else
+			throw new IllegalArgumentException ("Cannot add a VariableNode to a non VariableNode");
+	}
+
+	@Override
+	public Operable subtract (Operable v) throws IllegalArgumentException
+	{
+		if (v instanceof VariableNode var && isCompatibleWith (var))
+			if (this.multiplier.equals (var.multiplier))
+				return new NumberNode (Number.ZERO);
+			else
+				return new VariableNode (multiplier.subtract (var.multiplier), name, power.clone());
+		else
+			throw new IllegalArgumentException ("Cannot subtract a non VariableNode from a VariableNode");
+	}
+
+	@Override
+	public Operable multiply (Operable v) throws IllegalArgumentException
+	{
+		if (v instanceof VariableNode var)
+			if (this.name.equals (var.name))
+				return new VariableNode (this.multiplier.multiply (var.multiplier), name, power.add ((var.getPower())));
+			else
+				throw new IllegalArgumentException ("Cannot multiply VariableNodes of different variable names");
+		else if (v instanceof NumberNode n)
+			return new VariableNode (multiplier.multiply (n.getValue()), name, power.clone());
+		else
+			throw new IllegalArgumentException ("Cannot multiply a VariableNode with a non Operable");
+	}
+
+	@Override
+	public Operable divide (Operable v) throws IllegalArgumentException, ArithmeticException
+	{
+		if (v instanceof VariableNode var)
+			if (this.name.equals (var.name))
+				if (this.power.equals (var.power))
+					return new NumberNode (this.multiplier.divide (var.multiplier));
+				else
+					return new VariableNode (this.multiplier.divide (var.multiplier), name, power.subtract ((var.getPower())));
+			else
+				throw new IllegalArgumentException ("Cannot divide VariableNodes of different variable names");
+		else if (v instanceof NumberNode n)
+			if (n.getValue().equals (Number.ZERO))
+				throw new ArithmeticException ("Cannot divide by zero");
+			else
+				return new VariableNode (multiplier.divide (n.getValue()), name, power.clone());
+		else
+			throw new IllegalArgumentException ("Cannot divide a VariableNode by a non Operable");
+	}
+
+	@Override
+	public Operable pow (Operable v) throws IllegalArgumentException
+	{
+		if (v instanceof VariableNode)
+			throw new IllegalArgumentException ("VariableNode cannot be the exponent of another");
+		else if (v instanceof NumberNode n)
+			if (n.getValue().isPureReal())
+				return new VariableNode (multiplier.clone(), name, power.multiply (n.getValue().getX()));
+			else
+				throw new IllegalArgumentException ("The exponent of a VariableNode cannot be a complex Number");
+		else
+			throw new IllegalArgumentException ("Cannot raise a VariableNode to the power of a non VariableNode");
 	}
 
 	@Override

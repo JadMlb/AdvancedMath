@@ -5,7 +5,7 @@ import com.AdvancedMath.Numbers.Number;
 /**
  * Class that holds a {@code Number} element in it. Child node in a binary tree
  */
-public class NumberNode extends Node
+public class NumberNode extends Node implements Operable
 {
 	private Number number;
 
@@ -62,6 +62,84 @@ public class NumberNode extends Node
 	public Node simplify ()
 	{
 		return new NumberNode (number.clone());
+	}
+
+	@Override
+	public void negate ()
+	{
+		this.number = this.number.negate();
+	}
+
+	@Override
+	public Operable negateCopy ()
+	{
+		return new NumberNode (number.negate());
+	}
+
+	@Override
+	public Operable add (Operable v) throws IllegalArgumentException
+	{
+		if (v instanceof NumberNode n)
+			return new NumberNode (this.number.add (n.number));
+		else
+			throw new IllegalArgumentException ("Cannot add a NumberNode to a non NumberNode");
+	}
+
+	@Override
+	public Operable subtract (Operable v) throws IllegalArgumentException
+	{
+		if (v instanceof NumberNode n)
+			return new NumberNode (this.number.subtract (n.number));
+		else
+			throw new IllegalArgumentException ("Cannot multiply a NumberNode with a non NumberNode");
+	}
+
+	@Override
+	public Operable multiply (Operable v) throws IllegalArgumentException
+	{
+		if (v instanceof NumberNode n)
+			return new NumberNode (this.number.multiply (n.getValue()));
+		else if (v instanceof VariableNode var)
+			return new VariableNode (this.number.multiply (var.getMultiplier()), var.getName(), var.getPower().clone());
+		else
+			throw new IllegalArgumentException ("Cannot multiply a VariableNode with a non Operable");
+	}
+
+	@Override
+	public Operable divide (Operable v) throws IllegalArgumentException, ArithmeticException
+	{
+		if (v instanceof NumberNode n)
+			if (n.number.equals (Number.ZERO))
+				throw new ArithmeticException ("Cannot divide by zero");
+			else if (this.number.equals (n.getValue()))
+				return new NumberNode (Number.ONE);
+			else
+				return new NumberNode (this.number.divide (n.number));
+		else if (v instanceof VariableNode var)
+			if (var.getMultiplier().equals (Number.ZERO))
+				throw new ArithmeticException ("Cannot divide by zero");
+			else
+				return new VariableNode (this.number.divide (var.getMultiplier()), var.getName(), var.getPower().negateCopy());
+		else
+			throw new IllegalArgumentException ("Cannot divide a NumberNode by a non Operable");
+	}
+
+	@Override
+	public Operable pow (Operable v) throws IllegalArgumentException
+	{
+		if (v instanceof VariableNode)
+			throw new IllegalArgumentException ("VariableNode cannot be the exponent of a NumberNode");
+		else if (v instanceof NumberNode n)
+		{
+			if (this.number.equals (Number.ZERO))
+				throw new IllegalArgumentException ("0^0 is undefined");
+			else if (n.number.equals (Number.ONE))
+				return new NumberNode (this.number.clone());
+			else
+				return new NumberNode (this.number.pow (n.number));
+		}
+		else
+			throw new IllegalArgumentException ("Cannot raise a VariableNode to the power of a non VariableNode");
 	}
 
 	@Override
