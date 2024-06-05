@@ -11,7 +11,7 @@ import com.AdvancedMath.Numbers.Number;
 /**
  * Class that represents a node in a binary tree
  */
-public abstract class Node implements Simplifiable
+public abstract class Node
 {
 	private Node right, left;
 

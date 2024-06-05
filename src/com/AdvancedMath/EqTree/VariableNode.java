@@ -81,15 +81,6 @@ public class VariableNode extends Node implements Operable
 	}
 
 	/**
-	 * @return a deep copy of the VariableNode
-	 */
-	@Override
-	public Node simplify ()
-	{
-		return new VariableNode (multiplier.clone(), name, power.clone());
-	}
-
-	/**
 	 * Evaluates whether two instances of {@code VariableNode} have the same variable name and degree in order to operate on them.
 	 * 
 	 * @param v The other instance of {@code VariableNode} to check for compatibility

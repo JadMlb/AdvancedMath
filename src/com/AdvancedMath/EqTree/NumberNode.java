@@ -55,16 +55,6 @@ public class NumberNode extends Node implements Operable
 		this.number = value;
 	}
 
-	/**
-	 * @return a deep copy of the NumberNode
-	 * 
-	 */
-	@Override
-	public Node simplify ()
-	{
-		return new NumberNode (number.clone());
-	}
-
 	@Override
 	public int sgn ()
 	{
