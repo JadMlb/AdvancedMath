@@ -424,8 +424,10 @@ public abstract class Node
 				break;
 		}
 
-		if (left instanceof OperatorNode o && right instanceof Operable r && trySimplify (o, oper, r))
+		if (left instanceof OperatorNode o && trySimplify (o, oper, right))
 			toPush = left;
+		else if (right instanceof OperatorNode o && !(left instanceof OperatorNode) && trySimplify (o, oper, left))
+			toPush = right;
 
 		if (toPush != null)
 			nodes.push (toPush);
@@ -441,7 +443,7 @@ public abstract class Node
 	 * @param n
 	 * @return true if simplification happened, false otherwise
 	 */
-	private static boolean trySimplify (OperatorNode subtree, Operators op, Operable n)
+	private static boolean trySimplify (OperatorNode subtree, Operators op, Node n)
 	{
 		Stack<Node> nodes = new Stack<>();
 		Node cur = subtree;
@@ -459,18 +461,18 @@ public abstract class Node
 				
 				// operate
 				// if simplification happened no need to continue
-				if (cur instanceof OperatorNode on && on.getOperator().pri() == op.pri())
+				if (cur instanceof OperatorNode on && on.getOperator().pri() == op.pri() && n instanceof Operable o)
 				{
 					if (cur.left instanceof Operable l)
 					{
 						try
 						{
 							cur.left = (Node) switch (op) {
-								case ADD -> l.add (n);
-								case SUB -> l.subtract (n);
-								case MUL -> l.multiply (n);
-								case DIV -> l.divide (n);
-								case POW -> l.pow (n);
+								case ADD -> l.add (o);
+								case SUB -> l.subtract (o);
+								case MUL -> l.multiply (o);
+								case DIV -> l.divide (o);
+								case POW -> l.pow (o);
 								default -> l;
 							};
 							return true;
@@ -488,11 +490,11 @@ public abstract class Node
 								right = r.negateCopy();
 							
 							Operable res = switch (op) {
-								case ADD -> right.add (n);
-								case SUB -> right.subtract (n);
-								case MUL -> right.multiply (n);
-								case DIV -> right.divide (n);
-								case POW -> right.pow (n);
+								case ADD -> right.add (o);
+								case SUB -> right.subtract (o);
+								case MUL -> right.multiply (o);
+								case DIV -> right.divide (o);
+								case POW -> right.pow (o);
 								default -> r;
 							};
 							
@@ -500,7 +502,7 @@ public abstract class Node
 							if (res.sgn() == -1)
 							{
 								res.negate();
-								on.setOperator (on.getOperator() == Operators.ADD ? Operators.SUB : Operators.ADD);
+								on.setOperator (Operators.SUB);
 							}
 
 							cur.right = (Node) res;
@@ -508,6 +510,35 @@ public abstract class Node
 							return true;
 						}
 						catch (Exception e) {}
+					}
+				}
+				else if (cur.left instanceof OperatorNode subT && n instanceof OperatorNode toAdd)
+				{
+					if (op.pri() == 1) // only if +/-
+					{
+						// check for common elements to factorize if possible
+						// subT = 2 * ln(x)
+						// toAdd = 3x * ln(x)
+						boolean isSubTLeft = true, isToAddLeft = true;
+						for (int i = 0; i < 4; i++)
+						{
+							Node subTNode = isSubTLeft ? subT.getLeft() : subT.getRight();
+							Node toAddNode = isToAddLeft ? toAdd.getLeft() : toAdd.getRight();
+							
+							if (subTNode.equals (toAddNode))
+								break;
+
+							isSubTLeft = (i >> 1) == 0;
+							isToAddLeft = (i & 0x01) == 0;
+						}
+
+						Node factored = new OperatorNode (
+												op,
+												isSubTLeft ? subT.getRight() : subT.getLeft(),
+												isToAddLeft ? toAdd.getRight() : toAdd.getLeft()
+											);
+						cur.left = new OperatorNode (Operators.MUL, factored, isSubTLeft ? subT.getLeft() : subT.getRight());
+						return true;
 					}
 				}
 				
