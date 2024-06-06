@@ -438,9 +438,9 @@ public abstract class Node
 	/**
 	 * Simplifies the given subtree by trying to combine like terms, e.g. 3x^2 + 5 - 20 + 4x^2 will result in 7x^2 - 15
 	 * 
-	 * @param subtree
-	 * @param op
-	 * @param n
+	 * @param subtree Current subtree to expand
+	 * @param op Operator attached to the Node wished to be added
+	 * @param n Node to add to tree
 	 * @return true if simplification happened, false otherwise
 	 */
 	private static boolean trySimplify (OperatorNode subtree, Operators op, Node n)
@@ -512,7 +512,7 @@ public abstract class Node
 						catch (Exception e) {}
 					}
 				}
-				else if (cur.left instanceof OperatorNode subT && n instanceof OperatorNode toAdd)
+				else if (cur instanceof OperatorNode subT && n instanceof OperatorNode toAdd)
 				{
 					if (op.pri() == 1) // only if +/-
 					{
@@ -537,7 +537,18 @@ public abstract class Node
 												isSubTLeft ? subT.getRight() : subT.getLeft(),
 												isToAddLeft ? toAdd.getRight() : toAdd.getLeft()
 											);
-						cur.left = new OperatorNode (Operators.MUL, factored, isSubTLeft ? subT.getLeft() : subT.getRight());
+						
+						if (!nodes.empty())
+						{
+							Node parent = nodes.pop();
+							parent.left = new OperatorNode (Operators.MUL, factored, isSubTLeft ? subT.getLeft() : subT.getRight());;
+							nodes.push (parent);
+						}
+						else if (isSubTLeft)
+							cur.right = factored;
+						else
+							cur.left = factored;
+
 						return true;
 					}
 				}
