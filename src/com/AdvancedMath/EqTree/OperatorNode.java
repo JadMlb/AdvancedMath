@@ -624,6 +624,328 @@ public class OperatorNode extends Node
 	}
 
 	@Override
+	public Node differentiate (String variable)
+	{
+		// Number left = null, right = null;
+		Node u = getLeft(), v = getRight();
+		Node uPrime = null, vPrime = null;
+
+		// try
+		// {
+		// 	left = Number.valueOf (getLeft(), null);
+		// }
+		// catch (Exception e){}
+		
+		// try
+		// {
+		// 	right = Number.valueOf (getRight(), null);
+		// }
+		// catch (Exception e){}
+
+		// // we are deriving a number
+		// if (operator.nbParams() == 2 && left != null && right != null || operator.nbParams() == 1 && right != null)
+		// {
+		// 	return new NumberNode (Number.ZERO);
+		// }
+
+		if (u != null)
+			uPrime = u.differentiate (variable);
+		
+		if (v != null)
+			vPrime = v.differentiate (variable);
+		
+		switch (operator)
+		{
+			case ADD: case SUB: 
+				if (uPrime.equals (Number.ZERO))
+					return vPrime;
+				else if (vPrime.equals (Number.ZERO))
+					return uPrime;
+				else
+					return new OperatorNode (operator, uPrime, vPrime);
+			case MUL: 
+				return new OperatorNode
+				(
+					Operators.ADD,
+					new OperatorNode (Operators.MUL, uPrime, v),
+					new OperatorNode (Operators.MUL, u, vPrime)
+				);
+			case DIV: 
+				return new OperatorNode
+				(
+					Operators.DIV,
+					new OperatorNode (Operators.SUB, new OperatorNode (Operators.MUL, uPrime, v), new OperatorNode (Operators.MUL, u, vPrime)),
+					new OperatorNode (Operators.POW, v, new NumberNode (Number.real (2.)))
+				);
+			case POW:
+				if (v instanceof NumberNode pow) // Power is a number use n*u^(n-1)*d_dx(u)
+				{
+					// Number pow = Number.valueOf (o.getRight(), null);
+					NumberNode originalPower = new NumberNode (pow.getValue());
+					pow = (NumberNode) pow.subtract (new NumberNode (Number.ONE));
+					Node powNode = null;
+					if (pow.getValue().equals (Number.ONE))
+						powNode = u;
+					else
+						powNode = new OperatorNode
+						(
+							Operators.POW,
+							u,
+							pow
+						);
+
+					return new OperatorNode
+					(
+						Operators.MUL,
+						originalPower,
+						new OperatorNode
+						(
+							Operators.MUL,
+							uPrime,
+							powNode
+						)
+					);
+				}
+				else // use deriv (u^v) = u^v * (lnu * dv/dx + v/u * du/dx)
+				{
+					return new OperatorNode
+					(
+						Operators.MUL,
+						this,
+						new OperatorNode
+						(
+							Operators.ADD,
+							new OperatorNode
+							(
+								Operators.MUL,
+								new OperatorNode
+								(
+									Operators.LN,
+									null,
+									u
+								),
+								vPrime
+							),
+							new OperatorNode
+							(
+								Operators.MUL,
+								new OperatorNode
+								(
+									Operators.DIV,
+									v,
+									u
+								),
+								uPrime
+							)
+						)
+					);
+				}
+			case LN: return new OperatorNode
+				(
+					Operators.DIV,
+					vPrime,
+					v
+				);
+			case EXP: return new OperatorNode
+				(
+					Operators.MUL,
+					vPrime,
+					new OperatorNode
+					(
+						Operators.EXP,
+						null,
+						v
+					)
+				);
+			case ABS: return new OperatorNode
+				(
+					Operators.DIV,
+					this,
+					v
+				);
+			case SIN: return new OperatorNode
+				(
+					Operators.MUL,
+					new OperatorNode
+					(
+						Operators.SUB,
+						null,
+						vPrime
+					),
+					new OperatorNode
+					(
+						Operators.COS,
+						null,
+						v
+					)
+				);
+			case COS: return new OperatorNode
+				(
+					Operators.MUL,
+					vPrime,
+					new OperatorNode
+					(
+						Operators.SIN,
+						null,
+						v
+					)
+				);
+			case TAN: return new OperatorNode
+				(
+					Operators.DIV,
+					vPrime,
+					new OperatorNode
+					(
+						Operators.POW,
+						new OperatorNode (Operators.COS, null, v),
+						new NumberNode (2.0, 0.0)
+					)
+				);
+			case ASIN: return new OperatorNode
+				(
+					Operators.DIV,
+					vPrime,
+					new OperatorNode
+					(
+						Operators.POW,
+						new OperatorNode
+						(
+							Operators.SUB,
+							new NumberNode (Number.ONE),
+							new OperatorNode (Operators.POW, v, new NumberNode (Number.real (2.0)))
+						),
+						new NumberNode (Number.real (new FractionValue (1, 5)))
+					)
+				);
+			case ACOS: return new OperatorNode
+				(
+					Operators.SUB,
+					new NumberNode (Number.ZERO),
+					new OperatorNode
+					(
+						Operators.DIV,
+						vPrime,
+						new OperatorNode
+						(
+							Operators.POW,
+							new OperatorNode
+							(
+								Operators.SUB,
+								new NumberNode (Number.ONE),
+								new OperatorNode (Operators.POW, v, new NumberNode (2.0, 0.0))
+							),
+							new NumberNode (Number.real (new FractionValue (1, 5)))
+						)
+					)
+				);
+			case ATAN: return new OperatorNode
+				(
+					Operators.DIV,
+					vPrime,
+					new OperatorNode
+					(
+						Operators.ADD,
+						new NumberNode (Number.ONE),
+						new OperatorNode (Operators.POW, v, new NumberNode (2.0, 0.0))
+					)
+				);
+			case SINH: return new OperatorNode
+				(
+					Operators.MUL,
+					vPrime,
+					new OperatorNode
+					(
+						Operators.COSH,
+						null,
+						v
+					)
+				);
+			case COSH: return new OperatorNode
+				(
+					Operators.MUL,
+					vPrime,
+					new OperatorNode
+					(
+						Operators.SINH,
+						null,
+						v
+					)
+				);
+			case TANH: return new OperatorNode
+				(
+					Operators.DIV,
+					vPrime,
+					new OperatorNode
+					(
+						Operators.POW,
+						new OperatorNode (Operators.COSH, null, v),
+						new NumberNode (2.0, 0.0)
+					)
+				);
+			case ASH: return new OperatorNode
+				(
+					Operators.DIV,
+					vPrime,
+					new OperatorNode
+					(
+						Operators.POW,
+						new OperatorNode
+						(
+							Operators.ADD,
+							new NumberNode (Number.ONE),
+							new OperatorNode (Operators.POW, v, new NumberNode (2.0, 0.0))
+						),
+						new NumberNode (Number.real (new FractionValue (1, 5)))
+					)
+				);
+			case ACH: return new OperatorNode
+				(
+					Operators.DIV,
+					vPrime,
+					new OperatorNode 
+					(
+						Operators.MUL,
+						new OperatorNode
+						(
+							Operators.POW,
+							new OperatorNode
+							(
+								Operators.SUB,
+								v,
+								new NumberNode (Number.ONE)
+							),
+							new NumberNode (Number.real (new FractionValue (1, 5)))
+						),
+						new OperatorNode
+						(
+							Operators.POW,
+							new OperatorNode
+							(
+								Operators.ADD,
+								v,
+								new NumberNode (Number.ONE)
+							),
+							new NumberNode (Number.real (new FractionValue (1, 5)))
+						)
+					)
+				);
+			case ATH: return new OperatorNode
+				(
+					Operators.DIV,
+					vPrime,
+					new OperatorNode
+					(
+						Operators.SUB,
+						new NumberNode (Number.ONE),
+						new OperatorNode (Operators.POW, v, new NumberNode (2.0, 0.0))
+					)
+				);
+			default:
+				return null;
+		}
+	}
+
+	@Override
 	public String toString ()
 	{
 		String s = "";

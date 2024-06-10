@@ -56,6 +56,12 @@ public class NumberNode extends Node implements Operable
 	}
 
 	@Override
+	public Node differentiate (String variable)
+	{
+		return new NumberNode (Number.ZERO);
+	}
+
+	@Override
 	public int sgn ()
 	{
 		return number.getX().compareTo (FractionValue.ZERO);
@@ -106,15 +112,10 @@ public class NumberNode extends Node implements Operable
 	public Operable divide (Operable v) throws IllegalArgumentException, ArithmeticException
 	{
 		if (v instanceof NumberNode n)
-			if (n.number.equals (Number.ZERO))
-				throw new ArithmeticException ("Cannot divide by zero");
-			else if (this.number.equals (n.getValue()))
-				return new NumberNode (Number.ONE);
-			else
-				return new NumberNode (this.number.divide (n.number));
+			return new NumberNode (this.number.divide (n.number));
 		else if (v instanceof VariableNode var)
 			if (var.getMultiplier().equals (Number.ZERO))
-				throw new ArithmeticException ("Cannot divide by zero");
+				return new NumberNode (number.divide (Number.ZERO));
 			else
 				return new VariableNode (this.number.divide (var.getMultiplier()), var.getName(), var.getPower().negateCopy());
 		else

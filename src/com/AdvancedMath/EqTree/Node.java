@@ -703,4 +703,6 @@ public abstract class Node
 
 		return false;
 	}
+
+	public abstract Node differentiate (String variable);
 }

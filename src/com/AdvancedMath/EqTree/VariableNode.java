@@ -80,6 +80,14 @@ public class VariableNode extends Node implements Operable
 		this.power = power;
 	}
 
+	@Override
+	public Node differentiate (String variable)
+	{
+		if (power.equals (FractionValue.ONE))
+			return new NumberNode (multiplier);
+		return new VariableNode (multiplier.multiply (Number.real (power)), name, power.subtract (FractionValue.ONE));
+	}
+
 	/**
 	 * Evaluates whether two instances of {@code VariableNode} have the same variable name and degree in order to operate on them.
 	 * 
