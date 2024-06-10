@@ -424,10 +424,19 @@ public abstract class Node
 				break;
 		}
 
-		if (left instanceof OperatorNode o && trySimplify (o, oper, right))
+		if (left instanceof OperatorNode o && left.countNodes() >= right.countNodes() && trySimplify (o, oper, right))
 			toPush = left;
-		else if (right instanceof OperatorNode o && !(left instanceof OperatorNode) && trySimplify (o, oper, left))
+		else if (
+				right instanceof OperatorNode o
+				&& (
+					!(left instanceof OperatorNode)
+					|| ((OperatorNode) left).getOperator().pri() == 5 && left.countNodes() < right.countNodes()
+				)
+				&& trySimplify (o, oper, left)
+			)
 			toPush = right;
+		else if (toPush == null && left != null && right != null && left.getClass().equals (right.getClass()) && left instanceof Operable)
+			toPush = simplifyAtomic (new OperatorNode (oper, left, right));
 
 		if (toPush != null)
 			nodes.push (toPush);
@@ -514,42 +523,116 @@ public abstract class Node
 				}
 				else if (cur instanceof OperatorNode subT && n instanceof OperatorNode toAdd)
 				{
+					// FIXME: generalize this if
+					if (subT.equals (toAdd))
+					{
+						// FIXME: add support for other operators
+						switch (op)
+						{
+							case ADD:
+								cur = new OperatorNode (Operators.MUL, new NumberNode (Number.real (2.)), new OperatorNode (toAdd.getOperator(), toAdd.getLeft(), toAdd.getRight()));
+								break;
+							
+							case SUB:
+								// TODO: remove node from tree
+								break;
+
+							case MUL:
+								cur = new OperatorNode (Operators.POW, new OperatorNode (toAdd.getOperator(), toAdd.getLeft(), toAdd.getRight()), new NumberNode (Number.real (2.)));
+								break;
+
+							case DIV:
+								break;
+						
+							default:
+								break;
+						}
+						Node parent = nodes.pop();
+						cur = new OperatorNode (Operators.MUL, new NumberNode (Number.real (2.)), new OperatorNode (toAdd.getOperator(), toAdd.getLeft(), toAdd.getRight()));
+						parent.left = cur;
+						nodes.push (parent);
+						return true;
+					}
+					
 					if (op.pri() == 1) // only if +/-
 					{
 						// check for common elements to factorize if possible
-						// subT = 2 * ln(x)
-						// toAdd = 3x * ln(x)
-						boolean isSubTLeft = true, isToAddLeft = true;
-						for (int i = 0; i < 4; i++)
-						{
-							Node subTNode = isSubTLeft ? subT.getLeft() : subT.getRight();
-							Node toAddNode = isToAddLeft ? toAdd.getLeft() : toAdd.getRight();
-							
-							if (subTNode.equals (toAddNode))
-								break;
 
-							isSubTLeft = (i >> 1) == 0;
-							isToAddLeft = (i & 0x01) == 0;
-						}
+						boolean commonFactorFound = false, isSubTLeft = true, isToAddLeft = true;
+						boolean toAddIsFunction = toAdd.getOperator().pri() == 5;
 
-						Node factored = new OperatorNode (
-												op,
-												isSubTLeft ? subT.getRight() : subT.getLeft(),
-												isToAddLeft ? toAdd.getRight() : toAdd.getLeft()
-											);
-						
-						if (!nodes.empty())
+						if (toAddIsFunction)
 						{
-							Node parent = nodes.pop();
-							parent.left = new OperatorNode (Operators.MUL, factored, isSubTLeft ? subT.getLeft() : subT.getRight());;
-							nodes.push (parent);
+							// cannot try and factorise argument of a function with its multiplier (e.g. (x+2) * e^(x+2) => cannot facotrise x+2 together)
+							// rather, check if the tree to add is in the children of the original subtree
+
+							for (int i = 0; i < 2; i++)
+							{
+								isSubTLeft = (i & 0x01) == 0;
+								Node subTNode = isSubTLeft ? subT.getLeft() : subT.getRight();
+								
+								if (subTNode.equals (toAdd))
+								{
+									commonFactorFound = true;
+									break;
+								}
+							}
 						}
-						else if (isSubTLeft)
-							cur.right = factored;
 						else
-							cur.left = factored;
-
-						return true;
+						{
+							// safe to factorize
+							for (int i = 0; i < 4; i++)
+							{
+								isSubTLeft = (i >> 1) == 0;
+								isToAddLeft = (i & 0x01) == 0;
+								Node subTNode = isSubTLeft ? subT.getLeft() : subT.getRight();
+								Node toAddNode = isToAddLeft ? toAdd.getLeft() : toAdd.getRight();
+								
+								if (subTNode.equals (toAddNode))
+								{
+									commonFactorFound = true;
+									break;
+								}
+							}
+						}
+						
+						if (commonFactorFound)
+						{
+							Node factorized = new OperatorNode (
+														op,
+														subT.getOperator().pri() == 2 ? (isSubTLeft ? subT.getRight() : subT.getLeft()) : new NumberNode (Number.ONE),
+														toAddIsFunction ? new NumberNode (Number.ONE) : (isToAddLeft ? toAdd.getRight() : toAdd.getLeft())
+													);
+							
+							factorized = simplifyAtomic ((OperatorNode) factorized);
+							
+							if (!nodes.empty())
+							{
+								Node parent = nodes.pop();
+								parent.left = new OperatorNode (Operators.MUL, factorized, isSubTLeft ? subT.getLeft() : subT.getRight());;
+								nodes.push (parent);
+							}
+							else if (isSubTLeft)
+								if (subT.getOperator().pri() == 2)
+									cur.right = factorized;
+								else
+									cur.left = new OperatorNode (
+														Operators.MUL,
+														factorized,
+														isSubTLeft ? subT.getLeft() : subT.getRight()
+													);
+							else
+								if (subT.getOperator().pri() == 2)
+									cur.left = factorized;
+								else
+									cur.right = new OperatorNode (
+														Operators.MUL,
+														factorized,
+														isSubTLeft ? subT.getLeft() : subT.getRight()
+													);
+	
+							return true;
+						}
 					}
 				}
 				
@@ -557,6 +640,45 @@ public abstract class Node
 			}
 		
 		return false;
+	}
+
+	private static Node simplifyAtomic (OperatorNode n)
+	{
+		// in case of missing values, fill them in with one
+		switch (n.getOperator())
+		{
+			case ADD: case SUB:
+				if (n.getRight() == null)
+					n.setRight (new NumberNode (Number.ONE));
+				else if (n.getLeft() == null)
+					n.setLeft (new NumberNode (Number.ONE));
+				break;
+		
+			default:
+				break;
+		}
+
+		if (n.getLeft() instanceof Operable l && n.getRight() instanceof Operable r)
+		{
+			try
+			{
+				return (Node) switch (n.getOperator())
+				{
+					case ADD -> l.add (r);
+					case SUB -> l.subtract (r);
+					case MUL -> l.multiply (r);
+					case DIV -> l.divide (r);
+					case POW -> l.pow (r);
+					default -> n;
+				};
+			}
+			catch (Exception e)
+			{
+				// e.printStackTrace();
+			}
+		}
+		
+		return n;
 	}
 
 	private static boolean isNumber (String s)
