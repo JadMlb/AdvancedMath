@@ -93,6 +93,19 @@ public class Function2D extends Function
 	{
 		
 	}
+	
+	/**
+	 * Executes {@link Function2D#differentiate(String)} by providing the declared variable and returns the first order derivative of this {@code Function} with respect to its variable
+	 * 
+	 * @return The derivative of this function in respect to its declared variable
+	 * 
+	 * @see Function2D#differentiate(String)
+	 */
+	public Function differentiate ()
+	{
+		// return new Function2D (getName() + "'", getVariables(), OperatorNode.simplify (deriveNode (tree, getVariables().iterator().next())));
+		return differentiate (getVariables().iterator().next());
+	}
 
 	/**
 	 * Returns the first order derivative of this {@code Function}
@@ -101,9 +114,10 @@ public class Function2D extends Function
 	 * @return The derivative of this function in respect of the variable provided
 	 */
 	@Override
-	public Function derive (String var)
+	public Function differentiate (String var)
 	{
-		return new Function2D (getName() + "'", getVariables(), OperatorNode.simplify (deriveNode (tree, var)));
+		// return new Function2D (getName() + "'", getVariables(), OperatorNode.simplify (deriveNode (tree, var)));
+		return new Function2D (getName() + "'", getVariables(), tree.differentiate (var));
 	}
 
 	@Override

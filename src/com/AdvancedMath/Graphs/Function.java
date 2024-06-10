@@ -173,7 +173,7 @@ public abstract class Function
 	 * @return The derivative of this function in respect of the variable provided on all the ranges (if exist) of the function
 	 * @see Range
 	 */
-	public abstract Function derive (String var);
+	public abstract Function differentiate (String var);
 
 	protected static Node deriveNode (Node root, String var)
 	{

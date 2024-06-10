@@ -195,7 +195,7 @@ public class MultiRangeFunction2D extends Function
 	 * @param var The variable we are differentiating in respect of
 	 * @return The derivative of this function in respect of the variable provided
 	 */
-	public Function derive (String var)
+	public Function differentiate (String var)
 	{
 		MultiRangeFunction2D derivative = new MultiRangeFunction2D (getName() + "'", getVariables().iterator().next(), null, (Node) null);
 		for (Range r : def.keySet())
