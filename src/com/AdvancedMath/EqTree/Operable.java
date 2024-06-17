@@ -67,4 +67,11 @@ public interface Operable
 	 * @throws IllegalArgumentException if this and v are not compatible
 	 */
 	public Operable pow (Operable v) throws IllegalArgumentException;
+
+	/**
+	 * Checks if this Node evaluates to zero or not
+	 * 
+	 * @return {@code true} if the value is effectively 0, {@code false} otherwise
+	 */
+	public boolean evaluatesToZero ();
 }

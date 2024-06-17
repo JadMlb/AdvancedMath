@@ -187,6 +187,12 @@ public class VariableNode extends Node implements Operable
 	}
 
 	@Override
+	public boolean evaluatesToZero ()
+	{
+		return multiplier.equals (Number.ZERO) || power.compareTo (new FloatValue (Double.NEGATIVE_INFINITY)) == 0;
+	}
+
+	@Override
 	public String toString () 
 	{
 		String s = "";

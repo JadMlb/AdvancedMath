@@ -141,6 +141,12 @@ public class NumberNode extends Node implements Operable
 	}
 
 	@Override
+	public boolean evaluatesToZero ()
+	{
+		return number.equals (Number.ZERO);
+	}
+
+	@Override
 	public String toString () 
 	{
 		return number.toString();
