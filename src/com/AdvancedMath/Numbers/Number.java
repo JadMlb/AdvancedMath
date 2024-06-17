@@ -263,8 +263,22 @@ public class Number extends Point implements Cloneable
 	 */
 	public Number divide (Double d)
 	{
-		if (d == 0)
-			throw new IllegalArgumentException ("Math error: Dividing by zero");
+		FloatValue infty = new FloatValue (Double.POSITIVE_INFINITY);
+		boolean isPositiveX = this.getX().compareTo (FractionValue.ZERO) >= 0;
+		boolean isPositiveY = this.getY().compareTo (FractionValue.ZERO) >= 0;
+		if (d == 0) 
+		{
+			if (this.equals (Number.ZERO))
+				throw new IllegalArgumentException ("Math error: 0/0 is undefined");
+			else
+				return new Number (isPositiveX ? infty : infty.negateCopy(), isPositiveY ? infty : infty.negateCopy());
+		}
+		else if (Double.isInfinite (d))
+		{
+			if (Double.isInfinite (this.getX().getDoubleValue()) || Double.isInfinite (this.getY().getDoubleValue()))
+				throw new IllegalArgumentException ("Math error: ∞/∞ is undefined");
+			return Number.ZERO;
+		}
 		return new Number (getX().divide (new FloatValue (d)), getY().divide (new FloatValue (d)));
 	}
 	
@@ -273,14 +287,25 @@ public class Number extends Point implements Cloneable
 	 * 
 	 * @param c
 	 * @return The division result of this and c
+	 * @throws ArithmeticException if both this number and c are 0
 	 */
 	public Number divide (Number c)
 	{
+		FloatValue infty = new FloatValue (Double.POSITIVE_INFINITY);
+		boolean isPositiveX = this.getX().compareTo (FractionValue.ZERO) >= 0;
+		boolean isPositiveY = this.getY().compareTo (FractionValue.ZERO) >= 0;
 		if (c.equals (Number.ZERO))
-			// throw new IllegalArgumentException ("Math error: Dividing by zero");
-			return new Number (Double.POSITIVE_INFINITY, Double.POSITIVE_INFINITY);
+			if (this.equals (Number.ZERO))
+				throw new ArithmeticException ("Math error: 0/0 is undefined");
+			else
+				return new Number (isPositiveX ? infty : infty.negateCopy(), isPositiveY ? infty : infty.negateCopy());
 		else if (Double.isInfinite (c.getX().getDoubleValue()) || Double.isInfinite (c.getY().getDoubleValue()))
+		{
+			if (Double.isInfinite (this.getX().getDoubleValue()) || Double.isInfinite (this.getY().getDoubleValue()))
+				throw new IllegalArgumentException ("Math error: ∞/∞ is undefined");
 			return Number.ZERO;
+		}
+		
 		return this.multiply(c.conjugate()).divide (Math.pow (c.length(), 2));
 	}
 
