@@ -80,6 +80,17 @@ public class VariableNode extends Node implements Operable
 		this.power = power;
 	}
 
+	/**
+	 * Resolves the value of this {@code VariableNode} by replacing it with the provided value
+	 * 
+	 * @param value The value of the variable
+	 * @return The result of replacing this variable with the provided value
+	 */
+	public Number resolve (Number value)
+	{
+		return multiplier.multiply (value.pow (Number.real (power)));
+	}
+
 	@Override
 	public Node differentiate (String variable)
 	{

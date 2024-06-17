@@ -589,7 +589,7 @@ public class Number extends Point implements Cloneable
 			if (variables == null || variables.get (v.getName()) == null)
 				throw new IllegalArgumentException ("The provided mapping of the variables to values is incomplete");
 			
-			return variables.get (v.getName());
+			return v.resolve (variables.get (v.getName()));
 		}
 		// else if (eq instanceof MatrixNode)
 		// 	throw new IllegalArgumentException ("The provided node contains a matrix. Use appropriate method");
