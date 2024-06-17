@@ -2,6 +2,7 @@ package com.AdvancedMath.EqTree;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.EmptyStackException;
 import java.util.Stack;
 import java.util.stream.Collectors;
 
@@ -452,7 +453,7 @@ public abstract class Node
 	 * @param n Node to add to tree
 	 * @return true if simplification happened, false otherwise
 	 */
-	private static boolean trySimplify (OperatorNode subtree, Operators op, Node n)
+	protected static boolean trySimplify (OperatorNode subtree, Operators op, Node n)
 	{
 		Stack<Node> nodes = new Stack<>();
 		Node cur = subtree;
@@ -467,10 +468,21 @@ public abstract class Node
 			else
 			{
 				cur = nodes.pop();
+
+				OperatorNode parentNode = null;
+				try
+				{
+					parentNode = (OperatorNode) nodes.peek();
+				}
+				catch (EmptyStackException ese) {}
+
+				// check if parent (which is guaranteed to be an OperatorNode) has same priority as the node to be added
+				// to avoid cases like factorizing the numerator of a fraction with a non fraction
+				// or if current node is the root
 				
 				// operate
 				// if simplification happened no need to continue
-				if (cur instanceof OperatorNode on && on.getOperator().pri() == op.pri() && n instanceof Operable o)
+				if ((parentNode == null || parentNode.getOperator() != Operators.DIV) && cur instanceof OperatorNode on && on.getOperator().pri() == op.pri() && n instanceof Operable o)
 				{
 					if (cur.left instanceof Operable l)
 					{
@@ -554,7 +566,7 @@ public abstract class Node
 						return true;
 					}
 					
-					if (op.pri() == 1) // only if +/-
+					if (op.pri() == 1 && subT.getOperator().pri() < 5) // only if +/-
 					{
 						// check for common elements to factorize if possible
 
@@ -642,7 +654,7 @@ public abstract class Node
 		return false;
 	}
 
-	private static Node simplifyAtomic (OperatorNode n)
+	protected static Node simplifyAtomic (OperatorNode n)
 	{
 		// in case of missing values, fill them in with one
 		switch (n.getOperator())
@@ -652,8 +664,74 @@ public abstract class Node
 					n.setRight (new NumberNode (Number.ONE));
 				else if (n.getLeft() == null)
 					n.setLeft (new NumberNode (Number.ONE));
+
+				if (n.getLeft() instanceof NumberNode l && l.getValue().equals (Number.ZERO))
+					return n.getRight();
+					
+				if (n.getRight() instanceof NumberNode r && r.getValue().equals (Number.ZERO))
+					return n.getLeft();
+
+				if (n.getRight() instanceof Operable o && o.sgn() < 0)
+				{
+					Operators newOperator = null;
+					if (n.getOperator() == Operators.ADD)
+						newOperator = Operators.SUB;
+					else
+						newOperator = Operators.ADD;
+
+					return new OperatorNode (newOperator, n.getLeft(), ((Node) o.negateCopy()));
+				}
 				break;
-		
+
+			case MUL:
+				// 0 * x or x * 0
+				if (
+					n.getLeft() instanceof NumberNode nbL && nbL.getValue().equals (Number.ZERO) ||
+					n.getRight() instanceof NumberNode nbR && nbR.getValue().equals (Number.ZERO) ||
+					n.getLeft() instanceof VariableNode vL && vL.getMultiplier().equals (Number.ZERO) ||
+					n.getRight() instanceof VariableNode vR && vR.getMultiplier().equals (Number.ZERO)
+				)
+					return new NumberNode (Number.ZERO);
+				
+				// 1 * x
+				if (n.getLeft() instanceof NumberNode l && l.getValue().equals (Number.ONE))
+					return n.getRight();
+					
+				// x * 1
+				if (n.getRight() instanceof NumberNode r && r.getValue().equals (Number.ONE))
+					return n.getLeft();
+
+				// a * (1 *|/ b)
+				if (n.getRight() instanceof OperatorNode r && r.getOperator().pri() == Operators.DIV.pri() && r.getLeft().equals (Number.ONE))
+					return combine (Operators.DIV, n.getLeft(), r.getRight());
+				// a * (b * 1)
+				if (n.getRight() instanceof OperatorNode r && r.getOperator() == Operators.MUL && r.getRight().equals (Number.ONE))
+					return combine (Operators.DIV, n.getLeft(), r.getRight());
+				break;
+			case DIV:
+				if (n.getLeft().equals (n))
+			
+				// 0 / x
+				if (n.getLeft() instanceof Operable o && o.evaluatesToZero())
+					return new NumberNode (Number.ZERO);
+				
+				// x / 0
+				if (n.getRight() instanceof Operable nbR && nbR.evaluatesToZero())
+					return new NumberNode (
+						new Number (
+							nbR.sgn() >= 0 ? Double.POSITIVE_INFINITY : Double.NEGATIVE_INFINITY,
+							nbR.sgn() >= 0 ? Double.POSITIVE_INFINITY : Double.NEGATIVE_INFINITY
+						)
+					);
+				
+				// x / 1
+				if (n.getRight() instanceof NumberNode r && r.getValue().equals (Number.ONE))
+					return n.getLeft();
+
+				if (n.getLeft().equals (n.getRight()))
+					return new NumberNode (Number.ONE);
+				break;
+
 			default:
 				break;
 		}
@@ -679,6 +757,13 @@ public abstract class Node
 		}
 		
 		return n;
+	}
+
+	protected static Node combine (Operators op, Node left, Node toAdd)
+	{
+		if (left instanceof OperatorNode oL && Node.trySimplify (oL, op, toAdd))
+			return left;
+		return simplifyAtomic (new OperatorNode (op, left, toAdd));
 	}
 
 	private static boolean isNumber (String s)

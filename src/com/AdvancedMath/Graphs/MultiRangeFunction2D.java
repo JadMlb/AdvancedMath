@@ -179,7 +179,8 @@ public class MultiRangeFunction2D extends Function
 			throw new NullPointerException ("This value falls outside of the defined range of the function");
 
 		if (tree instanceof OperatorNode o)
-			return OperatorNode.simplify (o, x);
+			// return OperatorNode.simplify (o, x);
+			throw new UnsupportedOperationException ("This mode is currently not supported");
 		if (tree instanceof VariableNode v && x != null && x.get (v.getName()) != null)
 			return new NumberNode (x.get (v.getName()));
 		return new NumberNode (Number.valueOf (tree, x));
@@ -199,7 +200,7 @@ public class MultiRangeFunction2D extends Function
 	{
 		MultiRangeFunction2D derivative = new MultiRangeFunction2D (getName() + "'", getVariables().iterator().next(), null, (Node) null);
 		for (Range r : def.keySet())
-			derivative.addFunctionDefiniton (r, OperatorNode.simplify (deriveNode (def.get (r), var)));
+			derivative.addFunctionDefiniton (r, def.get(r).differentiate(var));
 
 		return derivative;
 	}

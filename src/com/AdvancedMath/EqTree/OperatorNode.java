@@ -1,13 +1,6 @@
 package com.AdvancedMath.EqTree;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.Stack;
-
 import com.AdvancedMath.Functionalities.Operators;
-import com.AdvancedMath.Numbers.FloatValue;
 import com.AdvancedMath.Numbers.FractionValue;
 import com.AdvancedMath.Numbers.Number;
 
@@ -17,18 +10,6 @@ import com.AdvancedMath.Numbers.Number;
 public class OperatorNode extends Node
 {
 	private Operators operator;
-	// used for the case of division (simplify)
-	private static final HashMap<String, HashSet<String>> NUM_EQUIVALENCY_TABLE = new HashMap<>(), DEN_EQUIVALENCY_TABLE = new HashMap<>();
-
-	static
-	{
-		// 0 = (), 1 = + or -, 2 = *, 3 = /, a, b and c are the nodes involved
-		createMapping (new String[]{"0a1b03c", "a3c1b3c"}, true);
-		createMapping (new String[]{"0a2b03c", "a20b3c0", "b20a3c0"}, true);
-		createMapping (new String[]{"0a3b03c", "a30b2c0", "0a3c03b"}, true);
-		createMapping (new String[]{"0a3b03c", "a30b2c0", "0a3c03b"}, false);
-		createMapping (new String[]{"a30b3c0", "a2c03b0"}, false);	
-	}
 	
 	/**
 	 * Create a new {@code OperatorNode} with given children.
@@ -56,597 +37,27 @@ public class OperatorNode extends Node
 		this.operator = operator;
 	}
 
-	private static void createMapping (String[] values, boolean isNum)
-	{
-		for (int i = 0; i < values.length; i++)
-			for (int j = 0; j < values.length; j++)
-				if (i != j)
-				{
-					HashSet<String> cur = isNum ? NUM_EQUIVALENCY_TABLE.get (values[i]) : DEN_EQUIVALENCY_TABLE.get (values[i]);
-					if (cur == null)
-						cur = new HashSet<>();
-					
-					cur.add (values[j]);
-					if (isNum)
-						NUM_EQUIVALENCY_TABLE.put (values[i], cur);
-					else
-						DEN_EQUIVALENCY_TABLE.put (values[i], cur);
-				}
-	}
-
 	/**
 	 * Simplifies the given binary tree representing an equation
 	 * 
-	 * <p>e.g. provided (10*x)/(2*x), 5 is returned
+	 * <p>e.g. provided (10*x)/(2*x), 5 is returned</p>
+	 * 
+	 * <p><strong>NB:</strong> This method is deprecated and returns {@code root} since {@code Node.parse} simplifies as it builds the tree</p>
 	 * 
 	 * @param root The root {@code Node} of the given tree
 	 * @return The simplified tree, either a {@code NumberNode} or an {@code OperatorNode}
 	 */
+	@Deprecated
 	public static Node simplify (Node root)
 	{
-		return simplify (root, null);
-	}
-
-	/**
-	 * Simplifies the given binary tree representing an equation and replaces variables that have a mapping
-	 * 
-	 * <p>e.g. provided (10*x)/(2*x), 5 is returned
-	 * 
-	 * @param root The root {@code Node} of the given tree
-	 * @param variables The mapping between all the potential variables in the tree to a value
-	 * @return The simplified tree, either a {@code NumberNode} or an {@code OperatorNode}
-	 */
-	public static Node simplify (Node root, HashMap<String, Number> variables)
-	{
-		if (root == null)
-			return null;
-		
-		if (root instanceof OperatorNode o)
-		{
-			try
-			{
-				Number n = Number.valueOf (root, variables);
-				return new NumberNode (n);
-			}
-			catch (Exception e) {}
-			
-			if (o.operator.pri() == 5 && o.getRight() instanceof OperatorNode arg && arg.operator == o.operator.inverse())
-				return simplify (arg.getRight());
-			else if (o.operator == Operators.DIV)
-			{
-				if (o.getLeft().equals (o.getRight()))
-					return new NumberNode (Number.ONE);
-
-				Number divided = null, divisor = null;
-				Node simplifiedLeft = simplify (o.getLeft()), simplifiedRight = simplify (o.getRight());
-				try
-				{
-					divided = Number.valueOf (simplifiedLeft, variables);
-				}
-				catch (Exception e) {}
-				
-				try
-				{
-					divisor = Number.valueOf (simplifiedRight, variables);
-				}
-				catch (Exception e) {}
-
-				if (divided != null && divisor != null)
-					return new NumberNode (divided.divide (divisor));
-				else if (divided != null && divided.equals (Number.ZERO))
-					return new NumberNode (divided);
-				else if (divisor != null)
-				{
-					if (divisor.equals (Number.ZERO))
-						return new NumberNode (Double.NaN, Double.NaN);
-					else if (divisor.equals (Number.ONE))
-						return simplifiedLeft;
-				}
-
-				// get the case
-				HashMap<Integer, Node> nodes = new HashMap<>();
-				OperatorNode newO = new OperatorNode (Operators.DIV, simplifiedLeft, simplifiedRight);
-				String[] cases = getCase (newO, nodes);
-				
-				HashSet<Node> casesNodes = new HashSet<>();
-				casesNodes.add (newO);
-				
-				// split based on numerator
-				if (NUM_EQUIVALENCY_TABLE.get (cases[0]) != null)
-					for (String possib : NUM_EQUIVALENCY_TABLE.get (cases[0]))
-					{
-						boolean isAdd = false;
-						if (cases[0].equals ("0a1b03c"))
-							if (((OperatorNode) newO.getLeft()).operator == Operators.ADD)
-								isAdd = true;
-
-						casesNodes.add (construct (possib, nodes, false, isAdd));
-					}
-				
-				// split based on denominator
-				if (NUM_EQUIVALENCY_TABLE.get (cases[1]) != null)
-					for (String possib : DEN_EQUIVALENCY_TABLE.get (cases[1]))
-						casesNodes.add (construct (possib, nodes, true, false));
-
-				Iterator<Node> i = casesNodes.iterator();
-				Node currentBest = newO;
-				int currentBestFitness = newO.countNodes();
-				while (i.hasNext())
-				{
-					Node simplified = simplifyDiv (i.next());
-					
-					int fitness = simplified.countNodes();
-					if (fitness < currentBestFitness)
-					{
-						currentBest = simplified;
-						currentBestFitness = fitness;
-					}
-				}
-
-				return currentBest;
-			}
-			else if (o.operator == Operators.MUL)
-			{
-				ArrayList<Node> nodes = new ArrayList<>();
-				Stack<Node> stack = new Stack<>();
-				Node cur = o;
-
-				// check if the node corrsponds to a/b * c/d
-				HashMap<Integer, Node> nodesMap = new HashMap<>();
-				String[] cases = getCase (o, nodesMap);
-
-				if (cases[0] != null && cases[1] != null)
-				{
-					HashSet<Node> casesNodes = new HashSet<>();
-					casesNodes.add (o);
-					
-					// split based on numerator
-					if (NUM_EQUIVALENCY_TABLE.get (cases[0]) != null)
-						for (String possib : NUM_EQUIVALENCY_TABLE.get (cases[0]))
-						{
-							boolean isAdd = false;
-							if (cases[0].equals ("0a1b03c"))
-								if (((OperatorNode) o.getLeft()).operator == Operators.ADD)
-									isAdd = true;
-	
-							casesNodes.add (construct (possib, nodesMap, false, isAdd));
-						}
-					
-					// split based on denominator
-					if (NUM_EQUIVALENCY_TABLE.get (cases[1]) != null)
-						for (String possib : DEN_EQUIVALENCY_TABLE.get (cases[1]))
-							casesNodes.add (construct (possib, nodesMap, true, false));
-	
-					Iterator<Node> it = casesNodes.iterator();
-					Node currentBest = o;
-					int currentBestFitness = o.countNodes();
-					while (it.hasNext())
-					{
-						Node simplified = simplifyDiv (it.next());
-						
-						int fitness = simplified.countNodes();
-						if (fitness < currentBestFitness)
-						{
-							currentBest = simplified;
-							currentBestFitness = fitness;
-						}
-					}
-	
-					if (!currentBest.equals (o))
-						return currentBest;
-				}
-
-				while (!stack.empty() || cur != null)
-				{
-					if (cur != null && cur instanceof OperatorNode n && n.operator == Operators.MUL)
-					{
-						stack.push (cur);
-						cur = cur.getLeft();
-					}
-					else if (cur != null && cur instanceof OperatorNode)
-					{
-						nodes.add (simplify (cur));
-						if (!stack.empty())
-							cur = stack.pop().getRight();
-						else break;
-					}
-					else if (cur != null)
-					{
-						int idx = nodes.indexOf (cur);
-						if (idx > -1)
-						{
-							nodes.remove (idx);
-							nodes.add (new OperatorNode (Operators.POW, cur, new NumberNode (Number.real (2.0))));
-						}
-						else
-						{
-							idx = indexOfNodeToPower (nodes, cur);
-							if (idx > -1)
-							{
-								OperatorNode found = (OperatorNode) nodes.get(idx);
-								Node pow = found.getRight();
-
-								if (pow instanceof NumberNode n)
-								{
-									found.setRight (new NumberNode (n.getValue().add (Number.ONE)));
-								}
-								else
-								{
-									try
-									{
-										Number powNb = Number.valueOf (pow, null);
-										found.setRight (new NumberNode (powNb.add (Number.ONE)));
-										continue;
-									}
-									catch (Exception e) {}
-
-									found.setRight (new OperatorNode (Operators.ADD, pow, new NumberNode (Number.ONE)));
-								}
-							}
-							else
-							{
-								if (cur instanceof NumberNode n && n.getValue().equals (Number.ZERO))
-									return new NumberNode (Number.ZERO);
-								
-								int numberIdx = containsNumber (nodes);
-								if (numberIdx > -1 && cur instanceof NumberNode n)
-								{
-									((NumberNode) nodes.get (numberIdx)).setValue (n.getValue().multiply (((NumberNode) nodes.get (numberIdx)).getValue()));
-									cur = cur.getLeft();
-									continue;
-								}
-
-								nodes.add (simplify (cur));
-							}
-						}
-						cur = cur.getLeft();
-					}
-					else
-					{
-						if (!stack.empty())
-							cur = stack.pop().getRight();
-						else break;
-					}
-				}
-
-				OperatorNode newRoot = new OperatorNode (Operators.MUL, nodes.get (0), nodes.get (1));
-				for (int i = 2; i < nodes.size(); i++)
-				{
-					newRoot = new OperatorNode (Operators.MUL, newRoot, nodes.get (i));
-				}
-
-				return newRoot;
-			}
-			else if (o.operator.pri() == 1) // + or -
-			{
-				// check if it is the case of a/b +- c/d
-				HashMap<Integer, Node> nodesMap = new HashMap<>();
-				String[] cases = getCase (o, nodesMap);
-
-				if (cases[0] != null && cases[1] != null)
-				{
-					HashSet<Node> casesNodes = new HashSet<>();
-					casesNodes.add (o);
-					
-					// split based on numerator
-					if (NUM_EQUIVALENCY_TABLE.get (cases[0]) != null)
-						for (String possib : NUM_EQUIVALENCY_TABLE.get (cases[0]))
-						{
-							boolean isAdd = false;
-							if (cases[0].equals ("0a1b03c"))
-								if (((OperatorNode) o.getLeft()).operator == Operators.ADD)
-									isAdd = true;
-	
-							casesNodes.add (construct (possib, nodesMap, false, isAdd));
-						}
-					
-					// split based on denominator
-					if (NUM_EQUIVALENCY_TABLE.get (cases[1]) != null)
-						for (String possib : DEN_EQUIVALENCY_TABLE.get (cases[1]))
-							casesNodes.add (construct (possib, nodesMap, true, false));
-	
-					Iterator<Node> it = casesNodes.iterator();
-					Node currentBest = o;
-					int currentBestFitness = o.countNodes();
-					while (it.hasNext())
-					{
-						Node simplified = simplifyDiv (it.next());
-						
-						int fitness = simplified.countNodes();
-						if (fitness < currentBestFitness)
-						{
-							currentBest = simplified;
-							currentBestFitness = fitness;
-						}
-					}
-	
-					if (!currentBest.equals (o))
-						return currentBest;
-				}
-				
-				Node simplifiedLeft = simplify (o.getLeft()),
-					simplifiedRight = simplify (o.getRight());
-
-				if (simplifiedLeft instanceof NumberNode n)
-				{
-					if (n.getValue().equals (Number.ZERO))
-					{
-						if (o.operator == Operators.SUB)
-							if (simplifiedRight instanceof NumberNode nb)
-								return new NumberNode (nb.getValue().negate());
-							else
-								return new OperatorNode (Operators.SUB, null, simplifiedRight);
-						return simplifiedRight;
-					}
-				}
-				
-				if (simplifiedRight instanceof NumberNode n)
-				{
-					if (n.getValue().equals (Number.ZERO))
-						return simplifiedLeft;
-				}
-
-				if (simplifiedLeft instanceof NumberNode l && simplifiedRight instanceof NumberNode r)
-					return new NumberNode (l.getValue().subtract (r.getValue()));
-
-				return new OperatorNode (o.operator, simplifiedLeft, simplifiedRight);
-			}
-			else if (o.operator == Operators.POW)
-			{
-				Node simplifiedLeft = simplify (o.getLeft()),
-					simplifiedRight = simplify (o.getRight());
-
-				if (simplifiedLeft instanceof NumberNode l && simplifiedRight instanceof NumberNode r)
-					// return new NumberNode (l.getValue().pow (r.getValue()));
-					if (!r.getValue().isPureReal())
-						return new NumberNode (Double.NaN, Double.NaN);
-					else
-					{
-						FractionValue power = new FloatValue(r.getValue().getX().getDoubleValue()).getFraction();
-						if (power.getDenomenator() == 1)
-							return new NumberNode (l.getValue().pow ((int) r.getValue().getX().getDoubleValue()));
-						else
-							return new NumberNode (l.getValue().pow(power.getNumerator()).nthRoot(power.getDenomenator()).get (0));
-					}
-				
-				if (simplifiedRight instanceof NumberNode n)
-				{
-					if (n.getValue().equals (Number.ZERO))
-						return new NumberNode (Number.ONE);
-					else if (n.getValue().equals (Number.ONE))
-						return simplifiedLeft;
-				}
-				
-				if (simplifiedLeft instanceof NumberNode n)
-				{
-					if (n.getValue().equals (Number.ZERO) || n.getValue().equals (Number.ONE))
-						return n;
-				}
-			}
-		}
-		else if (root instanceof VariableNode v && variables != null && variables.get (v.getName()) != null)
-			return new NumberNode (variables.get (v.getName()));
-
 		return root;
-	}
-
-	private static String[] getCase (OperatorNode n, HashMap<Integer, Node> nodes)
-	{
-		// nodes is used to extract the nodes a, b and c to be used in "construct" later
-		// size of nodes = 6, first 3 for numerator, last 3 for denominator
-		String[] cases = new String [2];
-
-		if (n.operator == Operators.DIV)
-		{
-			if (n.getLeft() instanceof OperatorNode o)
-			{
-				if (o.operator.pri() == 1) // + or -
-					cases[0] = "0a1b03c";
-				else if (o.operator == Operators.MUL)
-					cases[0] = "0a2b03c";
-				else if (o.operator == Operators.DIV)
-					cases[0] = "0a3b03c";
-
-				
-				nodes.put (0, o.getLeft());
-				nodes.put (1, o.getRight());
-				nodes.put (2, n.getRight());
-			}
-			
-			if (n.getRight() instanceof OperatorNode o)
-			{
-				if (o.operator == Operators.MUL)
-					cases[1] = "a30b2c0";
-				else if (o.operator == Operators.DIV)
-					cases[1] = "a30b3c0";
-
-				nodes.put (3, n.getLeft());
-				nodes.put (4, o.getLeft());
-				nodes.put (5, o.getRight());
-			}
-		}
-		else if ((n.operator == Operators.ADD || n.operator == Operators.SUB) 
-			&& n.getLeft() instanceof OperatorNode l && l.operator == Operators.DIV
-			&& n.getRight() instanceof OperatorNode r && r.operator == Operators.DIV
-			&& l.getRight().equals (r.getRight()))
-		{
-			cases[0] = "a3c1b3c";
-
-			nodes.put (0, l.getLeft());
-			nodes.put (1, r.getLeft());
-			nodes.put (2, l.getRight());
-		}
-		else if (n.operator == Operators.MUL)
-		{
-			if (n.getLeft() instanceof OperatorNode o && o.operator == Operators.DIV)
-			{
-				cases[0] = "b20a3c0";
-
-				nodes.put (0, o.getLeft());
-				nodes.put (1, o.getRight());
-				nodes.put (2, n.getRight());
-			}
-			
-			if (n.getRight() instanceof OperatorNode o && o.operator == Operators.DIV)
-			{
-				cases[1] = "a20b3c0";
-
-				nodes.put (3, n.getLeft());
-				nodes.put (4, o.getLeft());
-				nodes.put (5, o.getRight());
-			}
-		}
-		
-		return cases;
-	}
-
-	private static Node simplifyDiv (Node n)
-	{
-		if (n.getLeft() == null || n.getRight() == null)
-			return n;
-		
-		Node simplifiedLeft = simplify (n.getLeft()), simplifiedRight = simplify (n.getRight());
-
-		if (simplifiedLeft.equals (simplifiedRight))
-			return new NumberNode (Number.ONE);
-
-		if (simplifiedLeft instanceof NumberNode nb && nb.getValue().equals (Number.ZERO))
-			return nb;
-
-		if (simplifiedRight instanceof NumberNode nb && nb.getValue().equals (Number.ONE))
-			return simplifiedLeft;
-
-		OperatorNode newRoot = new OperatorNode (((OperatorNode) n).getOperator(), simplifiedLeft, simplifiedRight);
-		if (simplifiedLeft.equals (n.getLeft()) && simplifiedRight.equals (n.getRight()))
-			return newRoot;
-		
-		// if (!(simplifiedLeft instanceof OperatorNode) && !(simplifiedRight instanceof OperatorNode))
-		// 	return newRoot;
-		return simplify (newRoot);
-	}
-
-	private static Node construct (String divCase, HashMap<Integer, Node> nodes, boolean withOffset, boolean isAdd)
-	{
-		int zeros = 0; // count zeros to check if parentheses or to stop
-
-		Stack<Node> nodesStack = new Stack<>();
-		Stack<Operators> ops = new Stack<>();
-		
-		for (int i = 0; i < divCase.length(); i++)
-		{
-			char cur = divCase.charAt (i);
-
-			switch (cur)
-			{
-				case 'a': if (nodes.get (withOffset ? 3 : 0) != null) nodesStack.push (nodes.get (withOffset ? 3 : 0)); break;
-				case 'b': if (nodes.get (withOffset ? 4 : 1) != null) nodesStack.push (nodes.get (withOffset ? 4 : 1)); break;
-				case 'c': if (nodes.get (withOffset ? 5 : 2) != null) nodesStack.push (nodes.get (withOffset ? 5 : 2)); break;
-				case '1':
-					while (!ops.empty() && ops.peek() != Operators.OPR && ops.peek().pri() >= Operators.ADD.pri())
-					{
-						Node right = nodesStack.pop();
-						nodesStack.push (new OperatorNode (ops.pop(), nodesStack.pop(), right));
-					}
-					
-					if (isAdd)
-						ops.push (Operators.ADD);
-					else
-						ops.push (Operators.SUB);
-					break;
-				case '2': 
-					while (!ops.empty() && ops.peek() != Operators.OPR && ops.peek().pri() >= Operators.MUL.pri())
-					{
-						Node right = nodesStack.pop();
-						nodesStack.push (new OperatorNode (ops.pop(), nodesStack.pop(), right));
-					}
-					
-					ops.push (Operators.MUL);
-					break;
-				case '3': 
-					while (!ops.empty() && ops.peek() != Operators.OPR && ops.peek().pri() >= Operators.DIV.pri())
-					{
-						Node right = nodesStack.pop();
-						nodesStack.push (new OperatorNode (ops.pop(), nodesStack.pop(), right));
-					}
-					
-					ops.push (Operators.DIV);
-					break;
-				case '0':
-					if (zeros == 0)
-					{
-						zeros++;
-						ops.push (Operators.OPR);
-						continue;
-					}
-					
-					while (!ops.empty() && ops.peek() != Operators.OPR)
-					{
-						Node right = nodesStack.pop();
-						nodesStack.push (new OperatorNode (ops.pop(), nodesStack.pop(), right));
-					}
-
-					if (!ops.empty() && ops.peek() == Operators.OPR) 
-						ops.pop();
-					break;
-			}
-		}
-
-		while (!ops.empty())
-		{
-			Node right = nodesStack.pop();
-			nodesStack.push (new OperatorNode (ops.pop(), nodesStack.pop(), right));
-		}
-		
-		return nodesStack.pop();
-	}
-
-	private static int containsNumber (ArrayList<Node> arr)
-	{
-		for (int i = 0; i < arr.size(); i++)
-		{
-			if (arr.get (i) instanceof NumberNode)
-				return i;
-		}
-
-		return -1;
-	}
-
-	// finds if the node raised to a power can be found in the array
-	private static int indexOfNodeToPower (ArrayList<Node> arr, Node toFind)
-	{
-		for (int i = 0; i < arr.size(); i++)
-		{
-			if (arr.get (i) instanceof OperatorNode o && o.operator == Operators.POW && o.getLeft().equals (toFind))
-				return i;
-		}
-
-		return -1;
 	}
 
 	@Override
 	public Node differentiate (String variable)
 	{
-		// Number left = null, right = null;
 		Node u = getLeft(), v = getRight();
 		Node uPrime = null, vPrime = null;
-
-		// try
-		// {
-		// 	left = Number.valueOf (getLeft(), null);
-		// }
-		// catch (Exception e){}
-		
-		// try
-		// {
-		// 	right = Number.valueOf (getRight(), null);
-		// }
-		// catch (Exception e){}
-
-		// // we are deriving a number
-		// if (operator.nbParams() == 2 && left != null && right != null || operator.nbParams() == 1 && right != null)
-		// {
-		// 	return new NumberNode (Number.ZERO);
-		// }
 
 		if (u != null)
 			uPrime = u.differentiate (variable);
@@ -658,47 +69,48 @@ public class OperatorNode extends Node
 		{
 			case ADD: case SUB: 
 				if (uPrime.equals (Number.ZERO))
-					return vPrime;
+					return operator.equals(Operators.SUB) && vPrime instanceof Operable vOp ? (Node) vOp.negateCopy() : vPrime;
 				else if (vPrime.equals (Number.ZERO))
 					return uPrime;
 				else
-					return new OperatorNode (operator, uPrime, vPrime);
+					return combine (operator, uPrime, vPrime);
 			case MUL: 
-				return new OperatorNode
+				return combine
 				(
 					Operators.ADD,
-					new OperatorNode (Operators.MUL, uPrime, v),
-					new OperatorNode (Operators.MUL, u, vPrime)
+					// new OperatorNode (Operators.MUL, uPrime, v),
+					combine (Operators.MUL, uPrime, v),
+					// new OperatorNode (Operators.MUL, u, vPrime)
+					combine (Operators.MUL, u, vPrime)
 				);
 			case DIV: 
-				return new OperatorNode
+				return combine
 				(
 					Operators.DIV,
-					new OperatorNode (Operators.SUB, new OperatorNode (Operators.MUL, uPrime, v), new OperatorNode (Operators.MUL, u, vPrime)),
-					new OperatorNode (Operators.POW, v, new NumberNode (Number.real (2.)))
+					combine (Operators.SUB, combine (Operators.MUL, uPrime, v), combine (Operators.MUL, u, vPrime)),
+					combine (Operators.POW, v, new NumberNode (Number.real (2.)))
 				);
 			case POW:
 				if (v instanceof NumberNode pow) // Power is a number use n*u^(n-1)*d_dx(u)
 				{
-					// Number pow = Number.valueOf (o.getRight(), null);
 					NumberNode originalPower = new NumberNode (pow.getValue());
 					pow = (NumberNode) pow.subtract (new NumberNode (Number.ONE));
 					Node powNode = null;
 					if (pow.getValue().equals (Number.ONE))
 						powNode = u;
 					else
-						powNode = new OperatorNode
+						powNode = combine
 						(
 							Operators.POW,
 							u,
 							pow
 						);
 
-					return new OperatorNode
+					return combine
 					(
 						Operators.MUL,
 						originalPower,
-						new OperatorNode
+						combine
 						(
 							Operators.MUL,
 							uPrime,
@@ -708,17 +120,17 @@ public class OperatorNode extends Node
 				}
 				else // use deriv (u^v) = u^v * (lnu * dv/dx + v/u * du/dx)
 				{
-					return new OperatorNode
+					return combine
 					(
 						Operators.MUL,
 						this,
-						new OperatorNode
+						combine
 						(
 							Operators.ADD,
-							new OperatorNode
+							combine
 							(
 								Operators.MUL,
-								new OperatorNode
+								combine
 								(
 									Operators.LN,
 									null,
@@ -726,10 +138,10 @@ public class OperatorNode extends Node
 								),
 								vPrime
 							),
-							new OperatorNode
+							combine
 							(
 								Operators.MUL,
-								new OperatorNode
+								combine
 								(
 									Operators.DIV,
 									v,
@@ -740,175 +152,175 @@ public class OperatorNode extends Node
 						)
 					);
 				}
-			case LN: return new OperatorNode
+			case LN: return combine
 				(
 					Operators.DIV,
 					vPrime,
 					v
 				);
-			case EXP: return new OperatorNode
+			case EXP: return combine
 				(
 					Operators.MUL,
 					vPrime,
-					new OperatorNode
+					combine
 					(
 						Operators.EXP,
 						null,
 						v
 					)
 				);
-			case ABS: return new OperatorNode
+			case ABS: return combine
 				(
 					Operators.DIV,
 					this,
 					v
 				);
-			case SIN: return new OperatorNode
+			case SIN: return combine
 				(
 					Operators.MUL,
-					new OperatorNode
+					combine
 					(
 						Operators.SUB,
 						null,
 						vPrime
 					),
-					new OperatorNode
+					combine
 					(
 						Operators.COS,
 						null,
 						v
 					)
 				);
-			case COS: return new OperatorNode
+			case COS: return combine
 				(
 					Operators.MUL,
 					vPrime,
-					new OperatorNode
+					combine
 					(
 						Operators.SIN,
 						null,
 						v
 					)
 				);
-			case TAN: return new OperatorNode
+			case TAN: return combine
 				(
 					Operators.DIV,
 					vPrime,
-					new OperatorNode
+					combine
 					(
 						Operators.POW,
-						new OperatorNode (Operators.COS, null, v),
+						combine (Operators.COS, null, v),
 						new NumberNode (2.0, 0.0)
 					)
 				);
-			case ASIN: return new OperatorNode
+			case ASIN: return combine
 				(
 					Operators.DIV,
 					vPrime,
-					new OperatorNode
+					combine
 					(
 						Operators.POW,
-						new OperatorNode
+						combine
 						(
 							Operators.SUB,
 							new NumberNode (Number.ONE),
-							new OperatorNode (Operators.POW, v, new NumberNode (Number.real (2.0)))
+							combine (Operators.POW, v, new NumberNode (Number.real (2.0)))
 						),
 						new NumberNode (Number.real (new FractionValue (1, 5)))
 					)
 				);
-			case ACOS: return new OperatorNode
+			case ACOS: return combine
 				(
 					Operators.SUB,
 					new NumberNode (Number.ZERO),
-					new OperatorNode
+					combine
 					(
 						Operators.DIV,
 						vPrime,
-						new OperatorNode
+						combine
 						(
 							Operators.POW,
-							new OperatorNode
+							combine
 							(
 								Operators.SUB,
 								new NumberNode (Number.ONE),
-								new OperatorNode (Operators.POW, v, new NumberNode (2.0, 0.0))
+								combine (Operators.POW, v, new NumberNode (2.0, 0.0))
 							),
 							new NumberNode (Number.real (new FractionValue (1, 5)))
 						)
 					)
 				);
-			case ATAN: return new OperatorNode
+			case ATAN: return combine
 				(
 					Operators.DIV,
 					vPrime,
-					new OperatorNode
+					combine
 					(
 						Operators.ADD,
 						new NumberNode (Number.ONE),
-						new OperatorNode (Operators.POW, v, new NumberNode (2.0, 0.0))
+						combine (Operators.POW, v, new NumberNode (2.0, 0.0))
 					)
 				);
-			case SINH: return new OperatorNode
+			case SINH: return combine
 				(
 					Operators.MUL,
 					vPrime,
-					new OperatorNode
+					combine
 					(
 						Operators.COSH,
 						null,
 						v
 					)
 				);
-			case COSH: return new OperatorNode
+			case COSH: return combine
 				(
 					Operators.MUL,
 					vPrime,
-					new OperatorNode
+					combine
 					(
 						Operators.SINH,
 						null,
 						v
 					)
 				);
-			case TANH: return new OperatorNode
+			case TANH: return combine
 				(
 					Operators.DIV,
 					vPrime,
-					new OperatorNode
+					combine
 					(
 						Operators.POW,
-						new OperatorNode (Operators.COSH, null, v),
+						combine (Operators.COSH, null, v),
 						new NumberNode (2.0, 0.0)
 					)
 				);
-			case ASH: return new OperatorNode
+			case ASH: return combine
 				(
 					Operators.DIV,
 					vPrime,
-					new OperatorNode
+					combine
 					(
 						Operators.POW,
-						new OperatorNode
+						combine
 						(
 							Operators.ADD,
 							new NumberNode (Number.ONE),
-							new OperatorNode (Operators.POW, v, new NumberNode (2.0, 0.0))
+							combine (Operators.POW, v, new NumberNode (2.0, 0.0))
 						),
 						new NumberNode (Number.real (new FractionValue (1, 5)))
 					)
 				);
-			case ACH: return new OperatorNode
+			case ACH: return combine
 				(
 					Operators.DIV,
 					vPrime,
-					new OperatorNode 
+					combine 
 					(
 						Operators.MUL,
-						new OperatorNode
+						combine
 						(
 							Operators.POW,
-							new OperatorNode
+							combine
 							(
 								Operators.SUB,
 								v,
@@ -916,10 +328,10 @@ public class OperatorNode extends Node
 							),
 							new NumberNode (Number.real (new FractionValue (1, 5)))
 						),
-						new OperatorNode
+						combine
 						(
 							Operators.POW,
-							new OperatorNode
+							combine
 							(
 								Operators.ADD,
 								v,
@@ -929,15 +341,15 @@ public class OperatorNode extends Node
 						)
 					)
 				);
-			case ATH: return new OperatorNode
+			case ATH: return combine
 				(
 					Operators.DIV,
 					vPrime,
-					new OperatorNode
+					combine
 					(
 						Operators.SUB,
 						new NumberNode (Number.ONE),
-						new OperatorNode (Operators.POW, v, new NumberNode (2.0, 0.0))
+						combine (Operators.POW, v, new NumberNode (2.0, 0.0))
 					)
 				);
 			default:
@@ -950,7 +362,7 @@ public class OperatorNode extends Node
 	{
 		String s = "";
 		boolean openPar = false;
-		if (operator == Operators.MUL && (getLeft() instanceof OperatorNode l && (l.getOperator() == Operators.ADD || l.getOperator() == Operators.SUB)))
+		if (operator.pri() > Operators.ADD.pri() && (getLeft() instanceof OperatorNode l && l.getOperator().pri() == Operators.ADD.pri()))
 		{
 			s += "(";
 			openPar = true;
@@ -967,8 +379,15 @@ public class OperatorNode extends Node
 		
 		s += this.operator.toString();
 
-		if (operator == Operators.MUL && (getRight() instanceof OperatorNode r && (r.getOperator() == Operators.ADD || r.getOperator() == Operators.SUB))
-			|| operator.pri() == 5)
+		Node leftestInRightSubtree = this.getRight();
+		while (leftestInRightSubtree.getLeft() != null)
+			leftestInRightSubtree = leftestInRightSubtree.getLeft();
+
+		if (
+			getRight() instanceof OperatorNode r && r.getOperator().pri() == Operators.ADD.pri()
+			|| operator.pri() == 5
+			|| leftestInRightSubtree instanceof Operable o && o.sgn() == -1
+		)
 		{
 			s += "(";
 			openPar = true;
