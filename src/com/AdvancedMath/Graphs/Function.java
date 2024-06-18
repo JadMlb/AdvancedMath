@@ -7,10 +7,7 @@ import java.util.HashSet;
 import java.util.stream.Collectors;
 
 import com.AdvancedMath.EqTree.Node;
-import com.AdvancedMath.EqTree.NumberNode;
 import com.AdvancedMath.EqTree.OperatorNode;
-import com.AdvancedMath.EqTree.VariableNode;
-import com.AdvancedMath.Functionalities.Operators;
 import com.AdvancedMath.Numbers.FractionValue;
 import com.AdvancedMath.Numbers.Number;
 
@@ -41,18 +38,6 @@ public abstract class Function
 	public HashSet<String> getVariables () 
 	{
 		return this.variables;
-	}
-
-	/**
-	 * Changes a variable name into another one
-	 * 
-	 * @param originalVariable The old variable
-	 * @param newVariable The new variable name
-	 */
-	public void changeVariable (String originalVariable, String newVariable) 
-	{
-		variables.remove (originalVariable);
-		variables.add (newVariable);
 	}
 
 	/**

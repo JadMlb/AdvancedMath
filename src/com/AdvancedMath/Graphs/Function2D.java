@@ -8,8 +8,7 @@ import com.AdvancedMath.Numbers.Number;
 
 import com.AdvancedMath.EqTree.Node;
 import com.AdvancedMath.EqTree.NumberNode;
-import com.AdvancedMath.EqTree.OperatorNode;
-import com.AdvancedMath.EqTree.VariableNode;
+import com.AdvancedMath.Exceptions.VariableNotAllowedException;
 
 /**
  * Class that represents functions to be manipulated
@@ -24,24 +23,12 @@ public class Function2D extends Function
 	 * @param name The name of the function (f(x), g(x, y), ...)
 	 * @param variables An array of {@code String} containing the names of the variables that this function depends on
 	 * @param expression The {@code String} that represents this function
+	 * @throws VariableNotAllowedException if a variable other than the declared one is detected
 	 */
-	public Function2D (String name, String variable, String expression)
+	public Function2D (String name, String variable, String expression) throws VariableNotAllowedException
 	{
 		super (name, new HashSet<> (Arrays.asList (variable)));
-		this.tree = Node.parse (expression + ")");
-	}
-
-	/**
-	 * Creates a {@code Function} name(variables) = expression, defined on R = (-infinity, +infinity)
-	 * 
-	 * @param name The name of the function (f(x), g(x, y), ...)
-	 * @param variables An array of {@code String} containing the names of the variables that this function depends on
-	 * @param expression The {@code Node} that represents this function
-	 */
-	public Function2D (String name, String variable, Node expression)
-	{
-		super (name, new HashSet<> (Arrays.asList (variable)));
-		this.tree = expression;
+		this.tree = Node.parse (expression + ")", new HashSet<> (Arrays.asList (variable)));
 	}
 
 	private Function2D (String name, HashSet<String> variables, Node expression)
@@ -75,17 +62,34 @@ public class Function2D extends Function
 	/**
 	 * Get the value of f(a, b, ...)
 	 * 
+	 * @param x The value at which we want to evaluate the function. 
+	 * @return The value of the function for the specified variables
+	 * @throws IllegalArgumentException if x is null
+	 */
+	public Node of (Number x)
+	{
+		HashMap<String, Number> vars = new HashMap<>();
+		vars.put (this.getVariables().iterator().next(), x);
+
+		if (x == null)
+			throw new IllegalArgumentException ("The passed value to evaluate the function at is null");
+		
+		return new NumberNode (Number.valueOf (tree, vars));
+	}
+
+	/**
+	 * Get the value of f(a, b, ...)
+	 * 
 	 * @param x The values mapped to the name of the variables at which we want to evaluate the function. 
 	 * @return The value of the function for the specified variables
+	 * @throws IllegalArgumentException if x is null
 	 */
 	@Override
 	public Node of (HashMap<String, Number> x)
 	{
-		if (tree instanceof OperatorNode o)
-			// return OperatorNode.simplify (o, x);
-			throw new UnsupportedOperationException ("This mode is currently not supported");
-		if (tree instanceof VariableNode v && x != null && x.get (v.getName()) != null)
-			return new NumberNode (x.get (v.getName()));
+		if (x == null)
+			throw new IllegalArgumentException ("The passed value mapping to evaluate the function at is null");
+		
 		return new NumberNode (Number.valueOf (tree, x));
 	}
 
@@ -104,7 +108,6 @@ public class Function2D extends Function
 	 */
 	public Function differentiate ()
 	{
-		// return new Function2D (getName() + "'", getVariables(), OperatorNode.simplify (deriveNode (tree, getVariables().iterator().next())));
 		return differentiate (getVariables().iterator().next());
 	}
 
@@ -117,7 +120,6 @@ public class Function2D extends Function
 	@Override
 	public Function differentiate (String var)
 	{
-		// return new Function2D (getName() + "'", getVariables(), OperatorNode.simplify (deriveNode (tree, var)));
 		return new Function2D (getName() + "'", getVariables(), tree.differentiate (var));
 	}
 

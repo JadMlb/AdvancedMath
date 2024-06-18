@@ -3,9 +3,11 @@ package com.AdvancedMath.EqTree;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.EmptyStackException;
+import java.util.HashSet;
 import java.util.Stack;
 import java.util.stream.Collectors;
 
+import com.AdvancedMath.Exceptions.VariableNotAllowedException;
 import com.AdvancedMath.Functionalities.Operators;
 import com.AdvancedMath.Numbers.Number;
 
@@ -74,6 +76,27 @@ public abstract class Node
 	 */
 	public static Node parse (String input)
 	{
+		try
+		{
+			return parse (input, null);
+		}
+		catch (VariableNotAllowedException vnae)
+		{
+			return null;
+		}
+	}
+
+	/**
+	 * Transforms a {@code String} equation to a binary tree of {@code Node}s
+	 * <p>e.g. (x+3) * 5y will be turned into its corresponding tree as simplified as possible
+	 * 
+	 * @param input {@code String} representing the equation
+	 * @param allowedVars {@code HashSet} listing allowed variables in the tree
+	 * @return A parsable binary tree of {@code Node}s
+	 * @throws VariableNotAllowedException if a variable that is not in the list of allowed ones is detected
+	 */
+	public static Node parse (String input, HashSet<String> allowedVars) throws VariableNotAllowedException
+	{
 		ArrayList<String> opsSt = new ArrayList<>
 		(
 			Arrays.asList (Operators.values())
@@ -82,7 +105,7 @@ public abstract class Node
 				.collect (Collectors.toList())
 		);
 		
-		ArrayList<Object> tokens = tokenize ("(" + input + ")", opsSt);
+		ArrayList<Object> tokens = tokenize ("(" + input + ")", opsSt, allowedVars);
 		
 		return toTree (tokens);
 	}
@@ -203,9 +226,11 @@ public abstract class Node
 	 * Analyse the input and separate tokens 
 	 * @param input The input {@code String} to be analysed
 	 * @param opsSt {@code ArrayList} of all operators in form of string
+	 * @param allowedVars {@code HashSet} listing allowed variables
 	 * @return {@code ArrayList} of the separated tokens
+	 * @throws VariableNotAllowedException if a variable that is not in the list of allowed ones is detected
 	 */
-	private static ArrayList<Object> tokenize (String input, ArrayList<String> opsSt)
+	private static ArrayList<Object> tokenize (String input, ArrayList<String> opsSt, HashSet<String> allowedVars) throws VariableNotAllowedException
 	{
 		ArrayList<Object> analysedInput = new ArrayList<>();
 		String nb = null;
@@ -262,6 +287,10 @@ public abstract class Node
 				}
 				else
 				{
+					String variable = String.valueOf (input.charAt(i));
+					if (allowedVars != null && !allowedVars.contains (variable))
+						throw new VariableNotAllowedException (variable);
+
 					analysedInput.add (input.charAt(i) + "");
 					i++;
 				}

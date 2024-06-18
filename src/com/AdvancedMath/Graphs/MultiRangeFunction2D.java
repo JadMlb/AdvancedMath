@@ -10,8 +10,7 @@ import com.AdvancedMath.Numbers.Number;
 import com.AdvancedMath.Numbers.Value;
 import com.AdvancedMath.EqTree.Node;
 import com.AdvancedMath.EqTree.NumberNode;
-import com.AdvancedMath.EqTree.OperatorNode;
-import com.AdvancedMath.EqTree.VariableNode;
+import com.AdvancedMath.Exceptions.VariableNotAllowedException;
 
 /**
  * Class that represents a function defined in multiple ranges
@@ -29,11 +28,12 @@ public class MultiRangeFunction2D extends Function
 	 * @param range The range of definition of this function
 	 * @param expression The {@code Node} that represents this function
 	 * @throws IllegalArgumentException if the definition range is R = (-infinity, infinity). For the latter case, use {@link Function2D}
+	 * @throws VariableNotAllowedException if a variable that is not in the list of allowed ones is detected
 	 * 
 	 * @see MultiRangeFunction2D#addFunctionDefiniton(Range, Node)
 	 * @see Function2D
 	 */
-	public MultiRangeFunction2D (String name, String variable, Range range, String expression)
+	public MultiRangeFunction2D (String name, String variable, Range range, String expression) throws VariableNotAllowedException
 	{
 		super (name, new HashSet<> (Arrays.asList (variable)));
 		
@@ -42,7 +42,7 @@ public class MultiRangeFunction2D extends Function
 
 		this.def = new HashMap<>();
 		this.defRange = new HashMap<>();
-		Node parsed = Node.parse (expression + ")");
+		Node parsed = Node.parse (expression + ")", new HashSet<String> (Arrays.asList (variable)));
 		this.def.put (range, parsed);
 		this.defRange.put (parsed, range);
 	}
@@ -55,11 +55,12 @@ public class MultiRangeFunction2D extends Function
 	 * @param range The range of definition of this function
 	 * @param expression The {@code Node} that represents this function
 	 * @throws IllegalArgumentException if the definition range is R = (-infinity, infinity). For the latter case, use {@link Function2D}
+	 * @throws VariableNotAllowedException if a variable that is not in the list of allowed ones is detected
 	 * 
 	 * @see MultiRangeFunction2D#addFunctionDefiniton(Range, Node)
 	 * @see Function2D
 	 */
-	public MultiRangeFunction2D (String name, String variable, Range range, Node expression)
+	public MultiRangeFunction2D (String name, String variable, Range range, Node expression) throws VariableNotAllowedException
 	{
 		super (name, new HashSet<> (Arrays.asList (variable)));
 		
@@ -68,7 +69,7 @@ public class MultiRangeFunction2D extends Function
 
 		this.def = new HashMap<>();
 		this.defRange = new HashMap<>();
-		Node parsed = Node.parse (expression + ")");
+		Node parsed = Node.parse (expression + ")", new HashSet<String> (Arrays.asList (variable)));
 		this.def.put (range, parsed);
 		this.defRange.put (parsed, range);
 	}
@@ -114,10 +115,11 @@ public class MultiRangeFunction2D extends Function
 	 * 
 	 * @param range The range of the new definition
 	 * @param expression The definition of the function on the specified range
+	 * @throws VariableNotAllowedException if a variable that is not in the list of allowed ones is detected
 	 */
-	public void addFunctionDefiniton (Range range, String expression)
+	public void addFunctionDefiniton (Range range, String expression) throws VariableNotAllowedException
 	{
-		addFunctionDefiniton (range, Node.parse (expression + ")"));
+		addFunctionDefiniton (range, Node.parse (expression + ")", getVariables()));
 	}
 
 	/**
@@ -153,6 +155,38 @@ public class MultiRangeFunction2D extends Function
 	/**
 	 * Get the value of f(a, b, ...)
 	 * 
+	 * @param x The value at which we want to evaluate the function. 
+	 * @return The value of the function for the specified variables
+	 * 
+	 * @throws IllegalArgumentException if the map does not contain an entry for the variable or if the mapped number is imaginary
+	 */
+	public Node of (Number x)
+	{
+		if (x == null)
+			throw new IllegalArgumentException ("The passed value to evaluate the function at is null");
+		
+		if (!x.isPureReal())
+			throw new IllegalArgumentException ("The value of the variable must be a real value");
+		
+		Node tree = null;	
+		for (Range r : this.def.keySet())
+			if (r.contains (x.getX()))
+			{
+				tree = def.get (r);
+				break;
+			}
+
+		if (tree == null)
+			throw new NullPointerException ("This value falls outside of the defined range of the function");
+
+		HashMap<String, Number> mapping = new HashMap<>();
+		mapping.put (getVariables().iterator().next(), x);
+
+		return new NumberNode (Number.valueOf (tree, mapping));
+	}
+	/**
+	 * Get the value of f(a, b, ...)
+	 * 
 	 * @param x The values mapped to the name of the variables at which we want to evaluate the function. 
 	 * @return The value of the function for the specified variables
 	 * 
@@ -160,6 +194,9 @@ public class MultiRangeFunction2D extends Function
 	 */
 	public Node of (HashMap<String, Number> x)
 	{
+		if (x == null)
+			throw new IllegalArgumentException ("The passed value mapping to evaluate the function at is null");
+		
 		Number val = x.get (getVariables().iterator().next());
 		if (val == null)
 			throw new IllegalArgumentException ("Variable mapping does not contain an entry for the variable in the function");
@@ -178,11 +215,6 @@ public class MultiRangeFunction2D extends Function
 		if (tree == null)
 			throw new NullPointerException ("This value falls outside of the defined range of the function");
 
-		if (tree instanceof OperatorNode o)
-			// return OperatorNode.simplify (o, x);
-			throw new UnsupportedOperationException ("This mode is currently not supported");
-		if (tree instanceof VariableNode v && x != null && x.get (v.getName()) != null)
-			return new NumberNode (x.get (v.getName()));
 		return new NumberNode (Number.valueOf (tree, x));
 	}
 
@@ -198,11 +230,18 @@ public class MultiRangeFunction2D extends Function
 	 */
 	public Function differentiate (String var)
 	{
-		MultiRangeFunction2D derivative = new MultiRangeFunction2D (getName() + "'", getVariables().iterator().next(), null, (Node) null);
-		for (Range r : def.keySet())
-			derivative.addFunctionDefiniton (r, def.get(r).differentiate(var));
+		try
+		{
+			MultiRangeFunction2D derivative = new MultiRangeFunction2D (getName() + "'", getVariables().iterator().next(), null, (Node) null);
+			for (Range r : def.keySet())
+				derivative.addFunctionDefiniton (r, def.get(r).differentiate(var));
 
-		return derivative;
+				return derivative;
+		}
+		catch (VariableNotAllowedException vnae)
+		{
+			return null;
+		}
 	}
 
 	/**
@@ -238,9 +277,16 @@ public class MultiRangeFunction2D extends Function
 	
 	public static MultiRangeFunction2D unitStep (Number amplitude, Value x0)
 	{
-		MultiRangeFunction2D unit = new MultiRangeFunction2D ("u", "x", Range.gte (x0), new NumberNode (amplitude));
-		unit.addFunctionDefiniton (Range.lt (x0), new NumberNode (Number.ZERO));
-		return unit;
+		try
+		{
+			MultiRangeFunction2D unit = new MultiRangeFunction2D ("u", "x", Range.gte (x0), new NumberNode (amplitude));
+			unit.addFunctionDefiniton (Range.lt (x0), new NumberNode (Number.ZERO));
+			return unit;
+		}
+		catch (VariableNotAllowedException vnae)
+		{
+			return null;
+		}
 	}
 
 	public static MultiRangeFunction2D rectangular ()
@@ -255,13 +301,20 @@ public class MultiRangeFunction2D extends Function
 
 	public static MultiRangeFunction2D rectangular (Number amplitude, Value x0, Value width)
 	{
-		Value tOver2 = width.divide (new FractionValue (2, 1)),
-				lower = x0.subtract (tOver2),
-				upper = x0.add (tOver2);
-		MultiRangeFunction2D rect = new MultiRangeFunction2D ("rect", "x", new Range (lower, true, true, upper), new NumberNode (amplitude));
-		rect.addFunctionDefiniton (Range.lt (lower), new NumberNode (Number.ZERO));
-		rect.addFunctionDefiniton (Range.gt (upper), new NumberNode (Number.ZERO));
-		return rect;
+		try
+		{
+			Value tOver2 = width.divide (new FractionValue (2, 1)),
+					lower = x0.subtract (tOver2),
+					upper = x0.add (tOver2);
+			MultiRangeFunction2D rect = new MultiRangeFunction2D ("rect", "x", new Range (lower, true, true, upper), new NumberNode (amplitude));
+			rect.addFunctionDefiniton (Range.lt (lower), new NumberNode (Number.ZERO));
+			rect.addFunctionDefiniton (Range.gt (upper), new NumberNode (Number.ZERO));
+			return rect;
+		}
+		catch (VariableNotAllowedException vnae)
+		{
+			return null;
+		}
 	}
 
 	public static MultiRangeFunction2D dirac ()
@@ -271,18 +324,32 @@ public class MultiRangeFunction2D extends Function
 
 	public static MultiRangeFunction2D dirac (Value x0)
 	{
-		Value lower = x0.subtract (new FloatValue (1e-7)), upper = x0.add (new FloatValue (1e-7));
-		MultiRangeFunction2D d = new MultiRangeFunction2D ("𝞭", "x", Range.lt (lower), new NumberNode (Number.ZERO));
-		d.addFunctionDefiniton (new Range (lower, true, true, upper), new NumberNode (Number.ONE));
-		d.addFunctionDefiniton (Range.gt (upper), new NumberNode (Number.ZERO));
-		return d;
+		try
+		{
+			Value lower = x0.subtract (new FloatValue (1e-7)), upper = x0.add (new FloatValue (1e-7));
+			MultiRangeFunction2D d = new MultiRangeFunction2D ("𝞭", "x", Range.lt (lower), new NumberNode (Number.ZERO));
+			d.addFunctionDefiniton (new Range (lower, true, true, upper), new NumberNode (Number.ONE));
+			d.addFunctionDefiniton (Range.gt (upper), new NumberNode (Number.ZERO));
+			return d;
+		}
+		catch (VariableNotAllowedException vnae)
+		{
+			return null;
+		}
 	}
 
 	public static MultiRangeFunction2D sgn ()
 	{
-		MultiRangeFunction2D sgn = new MultiRangeFunction2D ("sgn", "x", Range.lt (new FloatValue (1e-7)), new NumberNode (Number.real (-1.)));
-		sgn.addFunctionDefiniton (new Range (-1e-7, true, true, 1e-7), new NumberNode (Number.ZERO));
-		sgn.addFunctionDefiniton (Range.gt (new FloatValue (1e-7)), new NumberNode (Number.ONE));
-		return sgn;
+		try
+		{
+			MultiRangeFunction2D sgn = new MultiRangeFunction2D ("sgn", "x", Range.lt (new FloatValue (1e-7)), new NumberNode (Number.real (-1.)));
+			sgn.addFunctionDefiniton (new Range (-1e-7, true, true, 1e-7), new NumberNode (Number.ZERO));
+			sgn.addFunctionDefiniton (Range.gt (new FloatValue (1e-7)), new NumberNode (Number.ONE));
+			return sgn;
+		}
+		catch (VariableNotAllowedException vnae)
+		{
+			return null;
+		}
 	}
 }
