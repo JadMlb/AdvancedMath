@@ -162,6 +162,15 @@ public class ConstantValue extends Value
 	}
 
 	/**
+	 * Gets the absolute value of this ConstantValue by returning it in a FloatValue
+	 */
+	@Override
+	public Value abs ()
+	{
+		return new FloatValue (Math.abs (getDoubleValue()));
+	}
+
+	/**
 	 * Adds two {@code ConstantValue}s. Takes into consideration the operator and changes the multiplier accordingly.
 	 * If the operator is ln, and both {@code Value}s have the same multiplier, affects the argument according to ln(a) + ln(b) = ln(a*b) and ln(a) - ln(b) = ln(a/b)
 	 * Else, returns a {@code FloatValue}

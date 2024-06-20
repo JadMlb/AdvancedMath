@@ -15,6 +15,14 @@ public abstract class Value implements Cloneable, Comparable<Value>
 	 * @return A new {@code Value} with its value equal to the negative of the current one
 	 */
 	public abstract Value negateCopy ();
+
+	/**
+	 * Returns the absolute value of the current one
+	 * 
+	 * @return The absolute value of the contained value
+	 */
+	public abstract Value abs ();
+
 	public abstract Value add (Value v);
 	public abstract Value subtract (Value v);
 	public abstract Value multiply (Value v);

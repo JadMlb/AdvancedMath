@@ -75,6 +75,12 @@ public class FloatValue extends Value
 		return lower.reduceCopy();
 	}
 
+	@Override
+	public Value abs ()
+	{
+		return new FloatValue (Math.abs (val));
+	}
+
 	/**
 	 * @return A {@code FloatValue} equals to this + v
 	 */

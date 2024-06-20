@@ -112,6 +112,12 @@ public class FractionValue extends Value
 	}
 
 	@Override
+	public Value abs ()
+	{
+		return new FractionValue (Math.abs (num), Math.abs (denom));
+	}
+
+	@Override
 	public Value add (Value v)
 	{
 		if (v instanceof FloatValue || v instanceof ConstantValue)
