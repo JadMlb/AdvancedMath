@@ -1,4 +1,4 @@
-package Graphs;
+package com.AdvancedMath.Graphs;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -7,14 +7,14 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.stream.Collectors;
 
-import Numbers.FractionValue;
-import Numbers.Number;
+import com.AdvancedMath.Functionalities.Operators;
+import com.AdvancedMath.Numbers.FractionValue;
+import com.AdvancedMath.Numbers.Number;
 
-import EqTree.Node;
-import EqTree.NumberNode;
-import EqTree.OperatorNode;
-import EqTree.VariableNode;
-import Functionalities.Operators;
+import com.AdvancedMath.EqTree.Node;
+import com.AdvancedMath.EqTree.NumberNode;
+import com.AdvancedMath.EqTree.OperatorNode;
+import com.AdvancedMath.EqTree.VariableNode;
 
 /**
  * Class that represents functions to be manipulated
@@ -35,7 +35,7 @@ public class Function
 	public Function (String name, HashSet<String> variables, String expression)
 	{
 		this.name = name;
-		this.tree = Node.parse (expression + ")");
+		this.tree = Node.parse (expression);
 		this.variables = variables;
 	}
 

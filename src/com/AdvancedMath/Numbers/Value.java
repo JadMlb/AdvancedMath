@@ -1,6 +1,6 @@
-package Numbers;
+package com.AdvancedMath.Numbers;
 
-public abstract class Value
+public abstract class Value implements Cloneable
 {
 	/**
 	 * Sets the value to the opposite of the current one. If the current value is positive, it becomes negative and vice versa.
@@ -18,6 +18,8 @@ public abstract class Value
 	public abstract Value multiply (Value v);
 	public abstract Value divide (Value v);
 	public abstract Value pow (Value v);
+	@Override
+	public abstract Value clone ();
 
 	/**
 	 * Gets the {@code double} that this {@code Value} represents

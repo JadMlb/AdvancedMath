@@ -1,6 +1,6 @@
-package Numbers;
+package com.AdvancedMath.Numbers;
 
-import Functionalities.Operators;
+import com.AdvancedMath.Functionalities.Operators;
 
 /**
  * Class representing constant values, like Pi, e, phi (golden ratio), ln(5), e^(-2), sqrt(10), ...
@@ -289,6 +289,12 @@ public class ConstantValue extends Value
 		else if (operator == Operators.LN)
 			return multiplier * Math.log (arguments[0]);
 		return multiplier * Math.pow (arguments[0], arguments[1]);
+	}
+
+	@Override
+	public Value clone ()
+	{
+		return new ConstantValue (multiplier, operator, arguments.clone());
 	}
 
 	@Override

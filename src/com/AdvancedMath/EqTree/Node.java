@@ -1,13 +1,12 @@
-package EqTree;
+package com.AdvancedMath.EqTree;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Stack;
 import java.util.stream.Collectors;
 
-import Numbers.Number;
-
-import Functionalities.Operators;
+import com.AdvancedMath.Functionalities.Operators;
+import com.AdvancedMath.Numbers.Number;
 
 /**
  * Class that represents a node in a binary tree
@@ -82,7 +81,7 @@ public abstract class Node
 				.collect (Collectors.toList())
 		);
 		
-		ArrayList<Object> analysedInput = analyseInput (input, opsSt);
+		ArrayList<Object> analysedInput = analyseInput (input + ")", opsSt);
 		
 		return toTree (analysedInput);
 	}

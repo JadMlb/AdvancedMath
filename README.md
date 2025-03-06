@@ -31,6 +31,9 @@ Review the documentation for detailed description of every method in the followi
 	1. `VariableNode`: (leaf) represents a variable
 	1. `OperatorNode`: represents an operation between two other nodes, or a mathematical function
 
+## Change Log
+You can refer to the [changelog](changelog.md) to check out the modifications made in each version.
+
 ## Examples
 
 1. 

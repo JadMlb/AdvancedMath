@@ -1,4 +1,4 @@
-package Functionalities;
+package com.AdvancedMath.Functionalities;
 
 import java.awt.Graphics;
 import java.awt.Graphics2D;
@@ -17,10 +17,10 @@ import javax.swing.JFrame;
 import javax.swing.JList;
 import javax.swing.JPanel;
 
-import Graphs.Function;
-import Graphs.Point;
-import Numbers.FloatValue;
-import Numbers.Number;
+import com.AdvancedMath.Graphs.Function;
+import com.AdvancedMath.Graphs.Point;
+import com.AdvancedMath.Numbers.FloatValue;
+import com.AdvancedMath.Numbers.Number;
 
 /**
  * A class that plots multiple functions on a {@code JPanel}.

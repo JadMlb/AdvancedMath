@@ -1,4 +1,4 @@
-package Numbers;
+package com.AdvancedMath.Numbers;
 
 /**
  * Class that wraps a {@code double}
@@ -127,6 +127,12 @@ public class FloatValue extends Value
 			return new FloatValue (Math.cbrt (val));
 		
 		return new FloatValue (Math.pow (val, v.getDoubleValue()));
+	}
+
+	@Override
+	public Value clone ()
+	{
+		return new FloatValue (val.doubleValue());
 	}
 
 	@Override

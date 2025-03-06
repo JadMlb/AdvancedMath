@@ -1,6 +1,6 @@
-package Numbers;
+package com.AdvancedMath.Numbers;
 
-import Functionalities.Operations;
+import com.AdvancedMath.Functionalities.Operations;
 
 /**
  * Class that represents a fraction
@@ -155,6 +155,12 @@ public class FractionValue extends Value
 
 		FractionValue fr = (FractionValue) v;
 		return new FloatValue (Math.pow (this.toFloatValue().getDoubleValue(), fr.toFloatValue().getDoubleValue()));
+	}
+
+	@Override
+	public Value clone ()
+	{
+		return new FractionValue (num, denom);
 	}
 
 	@Override
