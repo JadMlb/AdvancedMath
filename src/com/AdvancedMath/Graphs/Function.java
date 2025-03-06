@@ -35,7 +35,7 @@ public class Function
 	public Function (String name, HashSet<String> variables, String expression)
 	{
 		this.name = name;
-		this.tree = Node.parse (expression + ")");
+		this.tree = Node.parse (expression);
 		this.variables = variables;
 	}
 

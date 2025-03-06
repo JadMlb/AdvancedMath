@@ -81,7 +81,7 @@ public abstract class Node
 				.collect (Collectors.toList())
 		);
 		
-		ArrayList<Object> analysedInput = analyseInput (input, opsSt);
+		ArrayList<Object> analysedInput = analyseInput (input + ")", opsSt);
 		
 		return toTree (analysedInput);
 	}
