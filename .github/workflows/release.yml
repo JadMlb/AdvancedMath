@@ -1,0 +1,30 @@
+name: Release jar
+
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - '*'
+
+jobs:
+  build:
+    run-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Set up JDK
+        uses: actions/setup-java@v3
+        with:
+          java-version: '17'
+      - name: Build
+        run: |
+          javac -d out src/**/*.java
+          jar cf AdvancedMath.jar -C out .
+      - name: Upload jar
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: ncipollo/release-action@v1
+        with:
+          artifacts: AdvancedMath.jar
+          tag: ${{ github.ref }}
